@@ -1,4 +1,4 @@
-# 🪟 Win-AirLink
+# 🪟 Win-AirLink V1.0 / v1.1 Coming soon...
 
 **Win-AirLink** — это легковесный, быстрый и красивый аналог AirDrop для передачи файлов и сообщений по локальной сети (Wi-Fi) между ПК (Windows) и смартфоном (Android/iOS). 
 
