@@ -1,9 +1,9 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul
 cd /d "%~dp0"
 
 echo ============================================
-echo   LAN Мессенджер
+echo   Win-AirLink
 echo ============================================
 echo.
 
@@ -17,6 +17,25 @@ if errorlevel 1 (
   echo.
   pause
   exit /b 1
+)
+
+:: Проверяем, установлены ли библиотеки (папка node_modules)
+if not exist "node_modules\" (
+    echo Первый запуск: установка необходимых компонентов...
+    echo Это займет несколько секунд (требуется интернет).
+    echo.
+    call npm.cmd install
+    if errorlevel 1 (
+        echo.
+        echo ОШИБКА: Не удалось установить компоненты.
+        echo Проверьте подключение к интернету и запустите start.bat снова.
+        echo.
+        pause
+        exit /b 1
+    )
+    echo.
+    echo Компоненты успешно установлены!
+    echo.
 )
 
 echo Запускаю сервер...
