@@ -10,12 +10,12 @@
   /* --- ТЕМЫ --- */
   :root {
     --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2a3040;
-    --text: #e7eaf0; --muted: #8b94a5; --accent: #4f8cff; --green: #38d39f;
+    --text: #e7eaf0; --muted: #8b94a5; --accent: #4f8cff; --accent-rgb: 79, 140, 255; --green: #38d39f;
     --glow-color: rgba(79, 140, 255, 0.4);
   }
   [data-theme="light"] {
     --bg: #f0f2f5; --panel: #ffffff; --panel2: #f8f9fa; --line: #d1d5db;
-    --text: #1f2937; --muted: #6b7280; --accent: #2563eb; --green: #059669;
+    --text: #1f2937; --muted: #6b7280; --accent: #2563eb; --accent-rgb: 37, 99, 235; --green: #059669;
     --glow-color: rgba(37, 99, 235, 0.3);
   }
 
@@ -38,9 +38,9 @@
     padding: 1.5px;
     background: radial-gradient(
       190px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
-      rgba(88, 177, 255, .98) 0%,
-      rgba(54, 139, 255, .58) 24%,
-      rgba(54, 139, 255, .12) 48%,
+      rgba(var(--accent-rgb), .98) 0%,
+      rgba(var(--accent-rgb), .58) 24%,
+      rgba(var(--accent-rgb), .12) 48%,
       transparent 72%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -52,14 +52,14 @@
     z-index: 10;
   }
   .glow-target.is-lit::before { opacity: 1; }
-  .glow-target.is-lit { border-color: rgba(79,140,255,.48); }
+  .glow-target.is-lit { border-color: rgba(var(--accent-rgb),.58); box-shadow:0 0 0 1px rgba(var(--accent-rgb),.13),0 0 18px rgba(var(--accent-rgb),.12); }
 
   /* Базовые переходы */
   button,input[type=text],code,.panel,.devices,header,.drop,.chip,.msg,.file-item,.msg-form,.disk-space, select {
     transition: border-color .32s ease, box-shadow .38s ease, background-color .32s ease, transform .32s cubic-bezier(.2,.7,.2,1);
   }
   button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  button:hover{border-color:var(--accent);box-shadow:0 0 0 1px rgba(79, 140, 255, 0.15);transform:translateY(-1px)}
+  button:hover{border-color:var(--accent);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.18),0 0 14px rgba(var(--accent-rgb),.11);transform:translateY(-1px)}
   button:active{transform:translateY(0) scale(.98)}
   .panel{animation:panelEnter .55s cubic-bezier(.2,.7,.2,1) both}
   @keyframes panelEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
@@ -132,16 +132,64 @@
     padding:0;}
   .trash-btn:hover{background:#dc2626}
   .trash-btn:disabled{opacity:.35;cursor:not-allowed;background:var(--panel2);border-color:var(--line)}
+  .zip-except-btn{flex:0 0 auto;min-width:28px;min-height:28px;width:auto;padding:0 9px;display:flex;align-items:center;justify-content:center;gap:6px;
+    border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--accent);white-space:nowrap;font-size:11px;font-weight:600;}
+  .zip-except-btn:hover,.zip-except-btn.active{border-color:var(--accent);color:var(--accent);
+    background:rgba(var(--accent-rgb),.13);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.2),0 0 13px rgba(var(--accent-rgb),.2);}
+  .zip-except-btn:disabled{opacity:.42;cursor:not-allowed;box-shadow:none;transform:none;}
+  .zip-button-label{display:inline-block;max-width:min(58vw,210px);overflow:hidden;text-overflow:ellipsis;}
+  .zip-cancel-btn{flex:0 0 auto;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:7px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:15px;}
+  .zip-cancel-btn:hover{border-color:var(--accent);color:var(--text);box-shadow:0 0 12px rgba(var(--accent-rgb),.18);}
+  .zip-cancel-btn[hidden]{display:none;}
 
-  .h2-pct{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;
-    color:var(--accent);font-weight:700;font-size:13px;letter-spacing:0;text-transform:none;
-    pointer-events:none}
-  .h2-pct[hidden]{display:none}
+  /* Upload heading keeps the live receive status beside its title.
+     The action buttons live in a separate row below the heading divider. */
+  .uploads-panel>h2.uploads-heading{min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap}
+  .uploads-heading .h2-left{flex:1 1 auto;min-width:0}
+  .upload-status-inline{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto;min-width:0;
+    padding-left:10px;text-transform:none;letter-spacing:0;white-space:nowrap}
+  .upload-status-inline[hidden]{display:none!important}
+  .upload-status-label{display:flex;align-items:center;gap:6px;min-width:0;color:var(--muted);font-size:10px;
+    font-weight:650;letter-spacing:.045em;text-transform:uppercase}
+  .upload-status-label [data-i18n="receiving"]{white-space:nowrap}
+  .upload-status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:0 0 auto;
+    box-shadow:0 0 9px rgba(var(--accent-rgb),.65);animation:uploadDotPulse 1.35s ease-in-out infinite}
+  @keyframes uploadDotPulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.12)}}
+  #pctVal{color:var(--accent);font:700 12px/1 ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+  .upload-progress-track{height:5px;width:clamp(42px,9vw,86px);flex:0 1 86px;overflow:hidden;border-radius:99px;
+    background:rgba(var(--accent-rgb),.13);box-shadow:inset 0 1px 2px rgba(0,0,0,.18)}
+  .upload-progress-fill{height:100%;width:0%;border-radius:inherit;
+    background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 62%,white));
+    box-shadow:0 0 10px rgba(var(--accent-rgb),.38);transition:width .28s cubic-bezier(.22,.7,.25,1);will-change:width}
+  .upload-actions-row{display:flex;align-items:center;justify-content:flex-end;min-height:44px;padding:6px 12px;
+    border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--panel2) 30%,transparent)}
+  .upload-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex:0 0 auto;min-width:0}
+  .zip-button-label{display:inline-block;max-width:min(58vw,210px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media(max-width:520px){
+    .uploads-panel>h2.uploads-heading{padding:9px 10px;gap:7px;min-height:43px}
+    .upload-status-inline{gap:5px;padding-left:5px}
+    .upload-status-label{font-size:9px;gap:4px}
+    .upload-progress-track{width:clamp(32px,8vw,54px);flex-basis:clamp(32px,8vw,54px)}
+    #pctVal{font-size:11px}
+    .upload-actions-row{min-height:42px;padding:5px 10px}
+    .upload-header-actions{gap:6px}
+    .zip-except-btn{padding:0 8px;gap:5px}
+    .zip-button-label{max-width:clamp(105px,40vw,190px);font-size:11px}
+  }
+  @media(max-width:360px){
+    .upload-status-label [data-i18n="receiving"]{display:none}
+    .upload-status-inline{gap:6px}
+  }
+  @media(prefers-reduced-motion:reduce){.upload-status-dot{animation:none}.upload-progress-fill{transition:none}}
 
-  .messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0}
+
+  .messages{flex:1 1 0%;height:0;min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-gutter:stable;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
   .msg{max-width:82%;align-self:flex-start;background:var(--panel2);border:1px solid var(--line);
-    border-radius:12px;padding:7px 10px 5px;font-size:14px;overflow-wrap:anywhere;display:flex;flex-direction:column}
+    border-radius:12px;padding:7px 10px 5px;font-size:14px;overflow-wrap:anywhere;display:flex;flex-direction:column;
+    position:relative;isolation:isolate;overflow:hidden;flex:0 0 auto;flex-shrink:0;min-width:0}
+  .msg.message-enter{animation:messagePopIn .32s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes messagePopIn{0%{opacity:0;transform:translateY(8px) scale(.985)}72%{opacity:1;transform:translateY(-1px) scale(1.006)}100%{opacity:1;transform:translateY(0) scale(1)}}
   .msg.mine{align-self:flex-end;background:var(--bg);border-color:var(--accent)}
   .msg-head{display:flex;gap:8px;align-items:baseline;margin-bottom:2px}
   .msg-head b{font-size:12px;font-weight:600;color:var(--accent)}
@@ -161,11 +209,11 @@
   .drop {
     margin:10px; border:2px dashed var(--line); border-radius:12px; padding:14px; text-align:center;
     color:var(--muted); font-size:14px;
-    box-shadow: 0 0 15px rgba(79, 140, 255, 0.05); /* Дефолтное свечение */
+    box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.05); /* Дефолтное свечение */
     transition: all 0.3s ease;
   }
-  .drop:hover{box-shadow:0 0 28px rgba(79,140,255,.26),inset 0 0 18px rgba(79,140,255,.07);border-color:rgba(79,140,255,.68);}
-  .drop.over{border-color:var(--accent);background:var(--panel2);color:var(--accent);box-shadow:0 0 34px rgba(79,140,255,.46),inset 0 0 22px rgba(79,140,255,.13);} 
+  .drop:hover{box-shadow:0 0 28px rgba(var(--accent-rgb),.26),inset 0 0 18px rgba(var(--accent-rgb),.07);border-color:rgba(var(--accent-rgb),.68);}
+  .drop.over{border-color:var(--accent);background:var(--panel2);color:var(--accent);box-shadow:0 0 34px rgba(var(--accent-rgb),.46),inset 0 0 22px rgba(var(--accent-rgb),.13);} 
   .prog{min-height:0;margin-top:0;color:var(--muted);font-size:12px;text-align:center;transition:all .2s ease}
   .prog:not(:empty){margin-top:10px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
   
@@ -189,7 +237,7 @@
     width:100%;min-width:0;min-height:110px;flex:0 0 auto;
     transition:border-color .28s ease,box-shadow .32s ease,background .28s ease;}
   .file-item::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
-    background:linear-gradient(90deg,rgba(75,145,255,.34),rgba(0,190,255,.27));
+    background:linear-gradient(90deg,rgba(var(--accent-rgb),.34),rgba(var(--accent-rgb),.18));
     clip-path:inset(0 calc(100% - var(--progress,0%)) 0 0);
     transition:clip-path .9s linear,opacity .2s ease;}
   .file-item.uploading{
@@ -201,13 +249,13 @@
   .file-item > *{position:relative;z-index:1;}
   .file-item.just-ready{animation:fileCompleteGlow 2.7s ease-out both;}
   @keyframes fileCompleteGlow{
-    0%,18%{border-color:#36b7ff;box-shadow:0 0 0 1px rgba(54,183,255,.72),0 0 26px rgba(0,174,255,.48),inset 0 0 18px rgba(0,174,255,.18);}
-    100%{border-color:var(--line);box-shadow:0 0 0 0 rgba(54,183,255,0),0 0 0 rgba(0,174,255,0),inset 0 0 0 rgba(0,174,255,0);}
+    0%,18%{border-color:var(--accent);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.72),0 0 26px rgba(var(--accent-rgb),.48),inset 0 0 18px rgba(var(--accent-rgb),.18);}
+    100%{border-color:var(--line);box-shadow:0 0 0 0 rgba(var(--accent-rgb),0),0 0 0 rgba(var(--accent-rgb),0),inset 0 0 0 rgba(var(--accent-rgb),0);}
   }
-  .upload-pct{min-width:50px;text-align:center;color:#fff;background:#4b86f7;
-    border:1px solid rgba(132,183,255,.95);border-radius:8px;padding:7px 9px;
+  .upload-pct{min-width:50px;text-align:center;color:#fff;background:var(--accent);
+    border:1px solid rgba(var(--accent-rgb),.95);border-radius:8px;padding:7px 9px;
     font:700 12px ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;
-    flex:0 0 auto;box-shadow:0 1px 5px rgba(0,0,0,.18);z-index:2;}
+    flex:0 0 auto;box-shadow:0 1px 5px rgba(0,0,0,.18),0 0 12px rgba(var(--accent-rgb),.18);z-index:2;}
   /* Preview remains clear. Progress is shown as a translucent overlay across the full card. */
   .file-thumb-grey{display:none !important;}
   
@@ -225,11 +273,15 @@
   .file-name:hover{color:var(--accent)}
   .file-sub{font-size:12px;color:var(--muted)}
 
-  .btn-dl,.btn-del{display:flex;align-items:center;justify-content:center;width:50px;height:50px;
+  .btn-dl,.btn-del{--action-rgb:56,211,159;display:flex;align-items:center;justify-content:center;width:50px;height:50px;
     border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);
-    text-decoration:none;font-size:20px;flex:0 0 50px;cursor:pointer;}
-  .btn-dl:hover{background:#1d3a2b;border-color:#2f6b4d}
-  .btn-del:hover{background:#3a1d22;border-color:#7a3040}
+    text-decoration:none;font-size:20px;flex:0 0 50px;cursor:pointer;
+    transition:background-color .28s ease,border-color .28s ease,box-shadow .34s ease,transform .24s ease,color .24s ease;}
+  .btn-del{--action-rgb:239,68,80}
+  .btn-dl:hover,.btn-del:hover{background:rgba(var(--action-rgb),.15);border-color:rgba(var(--action-rgb),.72);color:var(--text);
+    box-shadow:0 0 0 1px rgba(var(--action-rgb),.18),0 0 16px rgba(var(--action-rgb),.25),inset 0 0 11px rgba(var(--action-rgb),.12);transform:translateY(-1px)}
+  .btn-dl:active,.btn-del:active{transform:translateY(0) scale(.97);box-shadow:0 0 9px rgba(var(--action-rgb),.22)}
+  .btn-dl:focus-visible,.btn-del:focus-visible{outline:2px solid rgba(var(--action-rgb),.9);outline-offset:2px;box-shadow:0 0 0 3px rgba(var(--action-rgb),.16),0 0 16px rgba(var(--action-rgb),.22)}
   .empty{color:var(--muted);font-size:14px;text-align:center;padding:16px}
 
   /* --- НАСТРОЙКИ --- */
@@ -270,8 +322,9 @@
 
   @media (max-width:820px){
     .app{height:auto;min-height:100dvh;padding:10px}
-    main{grid-template-columns:1fr}
-    .messages{height:42vh;flex:none}
+    main{grid-template-columns:1fr;min-height:0}
+    main>.panel:first-child{height:clamp(360px,58vh,620px);min-height:360px;flex:none}
+    main>.panel:first-child>.messages{height:auto;flex:1 1 0%;min-height:0;max-height:none}
     .file-list{max-height:40vh}
     .top-status-row { flex-direction:row; align-items:flex-start; }
     .devices { flex:0 1 auto; width:fit-content; max-width:100%; min-width:0; align-self:flex-start; align-items:center; border-radius:999px; padding:8px 12px; }
@@ -368,6 +421,21 @@
     .file-name{white-space:normal;overflow-wrap:anywhere}
   }
 
+
+  /* v1.2 chat layout: the panel owns a bounded viewport and bubbles keep
+     their natural height, so the messages list scrolls instead of compressing. */
+  main>.panel:first-child{min-height:0;min-width:0}
+  main>.panel:first-child>.messages{
+    flex:1 1 0%;min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;
+    overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+  }
+  main>.panel:first-child>.messages>.msg{flex:0 0 auto;flex-shrink:0}
+  @media(max-width:820px){
+    main>.panel:first-child{height:clamp(360px,58vh,620px);min-height:360px;max-height:75vh;display:flex;flex-direction:column}
+    main>.panel:first-child>.messages{height:auto;flex:1 1 0%;min-height:0;max-height:none}
+  }
+  @media(prefers-reduced-motion:reduce){.btn-dl,.btn-del{transition:none}}
+
 </style>
 </head>
 <body>
@@ -441,20 +509,31 @@
       </form>
     </section>
 
-    <section class="panel glow-target">
-      <h2>
+    <section class="panel glow-target uploads-panel">
+      <h2 class="uploads-heading">
         <div class="h2-left">
           <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7.5" fill="#107c10"/><path d="M8 4 L8 9 M5.5 7 L8 9.5 L10.5 7 M4.5 11.5 L11.5 11.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span data-i18n="uploads">ЗАГРУЗКИ</span>
           <span id="fileCount"></span>
         </div>
-        <div id="uploadPct" class="h2-pct" hidden>
-          <span class="pct-dash">— —</span> <span data-i18n="receiving">получение</span> <span id="pctVal">0%</span> <span class="pct-dash">— —</span>
+        <div id="uploadPct" class="upload-status-inline" role="status" aria-live="polite" hidden>
+          <span class="upload-status-label"><span class="upload-status-dot"></span><span data-i18n="receiving">получение</span></span>
+          <strong id="pctVal">0%</strong>
+          <div class="upload-progress-track" aria-hidden="true"><div id="uploadProgressBar" class="upload-progress-fill"></div></div>
         </div>
-        <button id="trashAll" class="trash-btn" type="button" data-i18n-title="delete_all_confirm" title="Удалить все файлы" disabled>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 1a.5.5 0 0 0-.5.5V2H2.5a.5.5 0 0 0 0 1h.6l.6 9.1A1.5 1.5 0 0 0 5.2 13.5h5.6a1.5 1.5 0 0 0 1.5-1.4l.6-9.1h.6a.5.5 0 0 0 0-1H11V1.5a.5.5 0 0 0-.5-.5h-5ZM6 2V2h4H6Zm-.9 2h5.8l-.5 8H5.6l-.5-8Z"/></svg>
-        </button>
       </h2>
+      <div class="upload-actions-row">
+        <div class="upload-header-actions">
+          <button id="downloadExcept" class="zip-except-btn" type="button" title="Выбрать файлы для ZIP" aria-label="Выбрать файлы для ZIP" disabled>
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.5 2.75h8l5 5v9.5a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-13.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11.5 2.9v5h4.8M5.5 12.2l2.5 2.4 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="zipButtonLabel" class="zip-button-label">Выбрать для ZIP</span>
+          </button>
+          <button id="cancelZipSelection" class="zip-cancel-btn" type="button" title="Отменить выбор ZIP" aria-label="Отменить выбор ZIP" hidden>✕</button>
+          <button id="trashAll" class="trash-btn" type="button" data-i18n-title="delete_all_confirm" title="Удалить все файлы" disabled>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 1a.5.5 0 0 0-.5.5V2H2.5a.5.5 0 0 0 0 1h.6l.6 9.1A1.5 1.5 0 0 0 5.2 13.5h5.6a1.5 1.5 0 0 0 1.5-1.4l.6-9.1h.6a.5.5 0 0 0 0-1H11V1.5a.5.5 0 0 0-.5-.5h-5ZM6 2V2h4H6Zm-.9 2h5.8l-.5 8H5.6l-.5-8Z"/></svg>
+          </button>
+        </div>
+      </div>
 
       <div id="drop" class="drop">
         <p class="drop-hint" data-i18n="drag_files">Перетащите файлы сюда или:</p>
@@ -481,10 +560,29 @@
   </main>
 </div>
 
-<div class="app-version" aria-label="Win-AirLink version 1.1">v1.1</div>
+<div class="app-version" aria-label="Win-AirLink version 1.2">v1.2</div>
 <style>
   .app-version{position:fixed;right:12px;bottom:7px;color:var(--muted);font-size:10px;opacity:.62;
     pointer-events:none;z-index:5;letter-spacing:.02em}
+</style>
+<style>
+  /* v1.2: keep the same glass language with a lighter mobile paint budget. */
+  @media (max-width:820px){
+    header,.devices,.disk-space,.panel,.settings-content,.settings-btn,.folder-group,.file-item,.msg,.drop{
+      -webkit-backdrop-filter:blur(11px) saturate(145%);
+      backdrop-filter:blur(11px) saturate(145%);
+    }
+    .bg-glow{animation:none;filter:blur(62px);opacity:.11}
+  }
+  @media (hover:none),(pointer:coarse){
+    .glow-target::before{background:radial-gradient(125px circle at var(--mouse-x,50%) var(--mouse-y,50%),rgba(var(--accent-rgb),.72) 0%,rgba(var(--accent-rgb),.22) 38%,transparent 72%);}
+    .glow-target.is-lit{border-color:rgba(var(--accent-rgb),.58);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.14),0 0 14px rgba(var(--accent-rgb),.10);}
+  }
+  #fileList>.file-item,.file-list-inner>.file-item{content-visibility:auto;contain-intrinsic-size:110px}
+  @media (prefers-reduced-motion:reduce){
+    .bg-glow{animation:none}
+    .file-item.just-ready,.file-item.is-deleting,.msg.is-deleting{animation-duration:.01ms}
+  }
 </style>
 
 <!-- Кнопка Настроек -->
@@ -565,7 +663,11 @@
       copy_address:"Скопировать адрес",qr_code:"QR-код",searching:"поиск…",anonymous:"Аноним",you_suffix:"вы",empty_uploads:"Пока нет загрузок",
       clear_chat_confirm:"Очистить весь чат?",delete_all_confirm:"Удалить ВСЕ файлы?",delete_file_confirm:"Удалить «{name}»?",
       server_offline:"Сервер не отвечает. Проверьте, что окно с server.js открыто.",download_started:"Скачивание началось. Используйте список загрузок браузера.",
-      browser_downloading:"Браузер скачивает файл на это устройство.",windows_only:"Проводник доступен только на Windows.",upload:"Загрузка",sent:"Отправлено",upload_failed:"Ошибка загрузки"
+      browser_downloading:"Браузер скачивает файл на это устройство.",windows_only:"Проводник доступен только на Windows.",upload:"Загрузка",sent:"Отправлено",upload_failed:"Ошибка загрузки",
+      zip_selected_select:"Выбрать файлы для ZIP",zip_selected_download:"Скачать выбранные",zip_selected_hint:"Отметьте файлы, которые хотите включить в ZIP.",
+      zip_selected_empty:"Отметьте хотя бы один файл для архива.",zip_selected_cancel:"Отменить выбор ZIP",
+      zip_starting:"Собираю ZIP-архив…",zip_started:"Скачивание ZIP началось. Проверьте загрузки браузера.",zip_no_files:"Выбранные файлы больше недоступны.",
+      zip_failed:"Не удалось собрать ZIP-архив.",zip_using_delete:"Для удаления завершите выбор ZIP и удерживайте кнопку корзины."
     },
     en: {
       for_phone:"For phone:",you:"You:",online:"Online",server:"Server:",messages:"Messages",uploads:"UPLOADS",receiving:"receiving",
@@ -576,6 +678,10 @@
       clear_chat_confirm:"Clear the entire chat?",delete_all_confirm:"Delete ALL files?",delete_file_confirm:"Delete “{name}”?",
       server_offline:"Server is not responding. Make sure server.js is running.",download_started:"Download started. Check your browser downloads.",
       browser_downloading:"Your browser is downloading the file to this device.",windows_only:"File Explorer is available on Windows only.",upload:"Uploading",sent:"Uploaded",upload_failed:"Upload failed",
+      zip_selected_select:"Select files for ZIP",zip_selected_download:"Download selected",zip_selected_hint:"Check the files you want to include in the ZIP.",
+      zip_selected_empty:"Select at least one file for the archive.",zip_selected_cancel:"Cancel ZIP selection",
+      zip_starting:"Building ZIP archive…",zip_started:"ZIP download started. Check your browser downloads.",zip_no_files:"The selected files are no longer available.",
+      zip_failed:"Could not create the ZIP archive.",zip_using_delete:"Finish ZIP selection before holding the trash button for delete selection.",
       chat_copy:"Copy",chat_delete:"Delete",download:"Download",delete:"Delete",version:"Version",qr_code:"QR code"
     }
   };
@@ -594,6 +700,11 @@
     $('#deviceList').querySelectorAll('[data-placeholder="searching"]').forEach(el => el.textContent = t('searching'));
     $('#clearChat').title = t('clear_chat_confirm');
     $('#trashAll').title = t('delete_all_confirm');
+    const langPack = i18n[lang] || i18n.ru;
+    $('#zipButtonLabel').textContent = langPack.zip_selected_select || i18n.ru.zip_selected_select;
+    $('#downloadExcept').title = langPack.zip_selected_select || i18n.ru.zip_selected_select;
+    $('#downloadExcept').setAttribute('aria-label', $('#downloadExcept').title);
+    $('#cancelZipSelection').title = langPack.zip_selected_cancel || i18n.ru.zip_selected_cancel;
   }
 
   // Wallpaper is stored as a Blob in IndexedDB. localStorage is too small for images.
@@ -641,6 +752,7 @@
 
   $('#langSelect').addEventListener('change', (e) => {
     applyLang(e.target.value);
+    updateZipButtonState();
   });
 
   $('#openSettings').addEventListener('click', () => $('#settingsModal').classList.add('open'));
@@ -651,7 +763,17 @@
   async function storeDir(key,handle){ const db=await dirDB; if(!db)return; await new Promise(resolve=>{const tx=db.transaction('dirs','readwrite');tx.objectStore('dirs').put(handle,key);tx.oncomplete=resolve;tx.onerror=resolve;}); }
   async function readDir(key){ const db=await dirDB; if(!db)return null; return new Promise(resolve=>{const tx=db.transaction('dirs','readonly');const q=tx.objectStore('dirs').get(key);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>resolve(null);}); }
   for (const [id,key] of [['chooseImagesDir','images'],['chooseVideosDir','videos'],['chooseOtherDir','other']]) {
-    $('#'+id).addEventListener('click', async()=>{ try { if(!window.showDirectoryPicker) { alert(currentLang()==='en'?'Folder selection is supported in Chrome/Edge. Firefox uses the browser download flow.':'Выбор папки поддерживается в Chrome/Edge. В Firefox используется стандартная загрузка браузера.'); return; } const h=await showDirectoryPicker({mode:'readwrite'}); await storeDir(key,h); $('#'+id).textContent='✓'; } catch(e){} });
+    $('#'+id).addEventListener('click', async()=>{
+      try {
+        if(typeof window.showDirectoryPicker !== 'function'){
+          alert(currentLang()==='en'?'This browser uses its standard download location. Folder routing is available in supported Chromium browsers.':'Этот браузер использует стандартную папку загрузок. Выбор отдельной папки доступен в поддерживаемых Chromium-браузерах.');
+          return;
+        }
+        const h=await window.showDirectoryPicker({mode:'readwrite'});
+        await storeDir(key,h);
+        $('#'+id).textContent='✓';
+      } catch(e) { /* User cancelled or browser denied the permission. */ }
+    });
   }
   async function saveToChosenFolder(fileId,fileName){
     const ext=(fileName.split('.').pop()||'').toLowerCase();
@@ -661,7 +783,10 @@
     const handle=await readDir(key); if(!handle)return false;
     try { let perm=await handle.queryPermission({mode:'readwrite'}); if(perm!=='granted') perm=await handle.requestPermission({mode:'readwrite'}); if(perm!=='granted')return false;
       const response=await fetch('/api/file/'+encodeURIComponent(fileId)); if(!response.ok)throw new Error('download failed');
-      const writable=await (await handle.getFileHandle(fileName,{create:true})).createWritable(); await response.body.pipeTo(writable); setBanner(currentLang()==='en'?'Saved to selected folder':'Сохранено в выбранную папку'); setTimeout(()=>setBanner(''),3500); return true;
+      const writable=await (await handle.getFileHandle(fileName,{create:true})).createWritable();
+      if(response.body && typeof response.body.pipeTo === 'function') await response.body.pipeTo(writable);
+      else { await writable.write(await response.blob()); await writable.close(); }
+      setBanner(currentLang()==='en'?'Saved to selected folder':'Сохранено в выбранную папку'); setTimeout(()=>setBanner(''),3500); return true;
     } catch(e){return false;}
   }
   function applyGlassSetting(){
@@ -676,10 +801,19 @@
     applyGlassSetting();
   });
   applyWallpaper();
+  function applyAccentColor(color){
+    const safe = /^#[0-9a-f]{6}$/i.test(String(color)) ? String(color) : '#4f8cff';
+    const rgb = [1,3,5].map(i => parseInt(safe.slice(i,i+2),16));
+    document.documentElement.style.setProperty('--accent',safe);
+    document.documentElement.style.setProperty('--accent-rgb',rgb.join(', '));
+  }
   $('#accentColor').value=localStorage.getItem('lm_accent')||'#4f8cff';
-  document.documentElement.style.setProperty('--accent',$('#accentColor').value);
-  $('#accentColor').addEventListener('input',e=>{localStorage.setItem('lm_accent',e.target.value);document.documentElement.style.setProperty('--accent',e.target.value);});
-  function setAccent(color){localStorage.setItem('lm_accent',color);$('#accentColor').value=color;document.documentElement.style.setProperty('--accent',color);}
+  applyAccentColor($('#accentColor').value);
+  $('#accentColor').addEventListener('input',e=>setAccent(e.target.value));
+  function setAccent(color){
+    const safe = /^#[0-9a-f]{6}$/i.test(String(color)) ? String(color) : '#4f8cff';
+    localStorage.setItem('lm_accent',safe);$('#accentColor').value=safe;applyAccentColor(safe);
+  }
   $('#resetAccent').addEventListener('click',()=>setAccent('#4f8cff'));
   $('#resetAccentWallpaper').addEventListener('click',async()=>{
     try{await wallpaperDelete();}catch(e){}
@@ -700,7 +834,7 @@
       x.drawImage(bitmap,Math.floor(bitmap.width/2),Math.floor(bitmap.height/2),1,1,0,0,1,1); bitmap.close?.();
       const d=x.getImageData(0,0,1,1).data;
       const color='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
-      localStorage.setItem('lm_accent',color); $('#accentColor').value=color; document.documentElement.style.setProperty('--accent',color);
+      setAccent(color);
     } catch(err) { alert(currentLang()==='en'?'Could not save wallpaper. Check browser storage permissions.':'Не удалось сохранить обои. Проверьте доступное место в хранилище браузера.'); }
     e.target.value='';
   });
@@ -711,24 +845,31 @@
     if (e.target === $('#settingsModal')) $('#settingsModal').classList.remove('open');
   });
 
-  // --- CURSOR-TRACKED EDGE SPOTLIGHT ---
-  document.querySelectorAll('.glow-target').forEach(card => {
-    const moveSpotlight = (e) => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-      card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-      card.classList.add('is-lit');
-    };
-    card.addEventListener('pointermove', moveSpotlight, { passive:true });
-    card.addEventListener('pointerenter', moveSpotlight, { passive:true });
-    card.addEventListener('pointerleave', () => card.classList.remove('is-lit'));
-    card.addEventListener('pointerdown', moveSpotlight, { passive:true });
-    card.addEventListener('pointerup', () => {
-      if (window.matchMedia('(hover: none)').matches) {
-        window.setTimeout(() => card.classList.remove('is-lit'), 450);
+  // --- ACCENT-COLORED EDGE SPOTLIGHT ---
+  {
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    document.querySelectorAll('.glow-target').forEach(card => {
+      let touchGlowTimer = 0;
+      const moveSpotlight = (e) => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        card.classList.add('is-lit');
+      };
+      if (finePointer) {
+        card.addEventListener('pointermove', moveSpotlight, { passive:true });
+        card.addEventListener('pointerenter', moveSpotlight, { passive:true });
+        card.addEventListener('pointerleave', () => card.classList.remove('is-lit'));
       }
+      card.addEventListener('pointerdown', (e) => {
+        moveSpotlight(e);
+        if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+          clearTimeout(touchGlowTimer);
+          touchGlowTimer = window.setTimeout(() => card.classList.remove('is-lit'), 620);
+        }
+      }, { passive:true });
     });
-  });
+  }
 
   // --- СЕТЬ И СОСТОЯНИЕ ---
   const state = {
@@ -813,7 +954,7 @@
     if (['psd','psb','ai','xd','cdr','sketch','fig','afdesign','afphoto','xcf','indd','kra'].includes(ext)) return '🎨';
     if (m.startsWith('image/') || ['jpg','jpeg','png','gif','webp','bmp','ico','tif','tiff','heic','heif','svg','avif','jfif'].includes(ext)) return '🖼️';
     if (m.startsWith('video/') || ['mp4','webm','mkv','mov','avi','wmv','flv','m4v','3gp','mpg','mpeg','ogv','ts','mts'].includes(ext)) return '🎬';
-    if (m.startsWith('audio/') || ['mp3','wav','ogg','flac','m4a','aac','wma','opus','aiff','ape','alac','mid','midi'].includes(ext)) return '🎵';
+    if (m.startsWith('audio/') || ['mp3','wav','ogg','oga','flac','m4a','m4b','aac','wma','opus','aiff','aif','aifc','ape','alac','wv','mpc','mka','dsf','dff','tta','tak','mid','midi'].includes(ext)) return '🎵';
     if (ext === 'pdf') return '📕';
     if (['doc','docx','odt','rtf','pages','wpd'].includes(ext)) return '📘';
     if (['xls','xlsx','ods','csv','numbers','tsv'].includes(ext)) return '📗';
@@ -890,24 +1031,30 @@
     }
   }
 
+  let clientsHash = '';
   async function pollClients(){
     try {
       const r = await fetch('/api/clients?' + qs(), { cache: 'no-store' });
       if (!r.ok) throw new Error();
-      renderDevices(await r.json());
+      const list = await r.json();
+      const hash = JSON.stringify(list.map(d => [d.id,d.name,d.ip]));
+      if (hash !== clientsHash) { clientsHash = hash; renderDevices(list); }
     } catch (e) {}
   }
 
   // --- ЧАТ ---
   function scrollBottomIfNeeded(force){
     const box = $('#messages');
-    const near = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
-    if (force || near) box.scrollTop = box.scrollHeight;
+    if (!force && box.scrollHeight - box.scrollTop - box.clientHeight >= 140) return;
+    requestAnimationFrame(() => {
+      if (!box.isConnected) return;
+      box.scrollTop = box.scrollHeight;
+    });
   }
 
-  function addMessageEl(m){
+  function addMessageEl(m, animate = false){
     const el = document.createElement('div');
-    el.className = 'msg' + (m.clientId === state.clientId ? ' mine' : '');
+    el.className = 'msg' + (m.clientId === state.clientId ? ' mine' : '') + (animate ? ' message-enter' : '');
     const head = document.createElement('div'); head.className = 'msg-head';
     const who = document.createElement('b'); who.textContent = m.name || t('anonymous');
     const tm = document.createElement('span'); tm.className = 'time'; tm.textContent = fmtTime(m.time);
@@ -939,6 +1086,7 @@
 
   let pollingMsgs = false;
   let messagesInitialized = false;
+  let renderedMessageSeqs = [];
   async function pollMessages(){
     if (pollingMsgs) return;
     pollingMsgs = true;
@@ -948,16 +1096,27 @@
       const list = await r.json();
       const hash = JSON.stringify(list.map(m => [m.seq, m.clientId, m.name, m.text, m.time]));
       if (hash !== state.messagesHash){
+        const chatBox = $('#messages');
+        const firstRender = !messagesInitialized;
+        const wasNearBottom = firstRender || (chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 140);
         const previousLastSeq = state.lastSeq;
         const incoming = list.some(m => m.seq > previousLastSeq && m.clientId !== state.clientId);
         const mine = list.some(m => m.seq > previousLastSeq && m.clientId === state.clientId);
-        $('#messages').replaceChildren();
-        for (const m of list) addMessageEl(m);
+        const incomingSeqs = list.map(m => m.seq);
+        const appendOnly = messagesInitialized && incomingSeqs.length >= renderedMessageSeqs.length &&
+          renderedMessageSeqs.every((seq, index) => incomingSeqs[index] === seq);
+        if (appendOnly) {
+          for (const m of list.slice(renderedMessageSeqs.length)) addMessageEl(m, true);
+        } else {
+          $('#messages').replaceChildren();
+          for (const m of list) addMessageEl(m);
+        }
+        renderedMessageSeqs = incomingSeqs;
         state.messagesHash = hash;
         if (list.length) state.lastSeq = Math.max(state.lastSeq, ...list.map(m => m.seq));
         if (messagesInitialized && incoming) playSound('notification');
         messagesInitialized = true;
-        scrollBottomIfNeeded(mine);
+        if (mine || wasNearBottom) scrollBottomIfNeeded(true);
       } else {
         messagesInitialized = true;
       }
@@ -982,35 +1141,220 @@
   });
 
   // --- ФАЙЛЫ ---
-  // Object URLs keep local image/video previews visible before the server finishes receiving a file.
-  const localPreviews = new Map();
+  // Previews are compact JPEG posters. The original File is uploaded unchanged.
+  // Render compact, crisp 256px posters on desktop and mobile alike.
+  const previewMaxEdge = () => 256;
+  const previewObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const img = entry.target;
+          const src = img.dataset.previewSrc;
+          if (src && !img.src) img.src = src;
+          previewObserver.unobserve(img);
+        }
+      }, { root: $('#fileList'), rootMargin: '180px 0px', threshold: 0.01 })
+    : null;
 
-  // GIF previews are converted to a single small JPEG frame. The animated GIF itself
-  // is never attached to an <img>, preventing continuous multi-frame decoding in the UI.
-  async function makeGifStill(file){
+  function canvasToJpeg(canvas, quality = 0.84){
+    const qualities = [quality, Math.max(0.68, quality - 0.08), Math.max(0.58, quality - 0.16)];
+    return (async () => {
+      for (const q of [...new Set(qualities)]) {
+        const blob = await new Promise(resolve => {
+          try { canvas.toBlob(resolve, 'image/jpeg', q); } catch(e) { resolve(null); }
+        });
+        if (blob && blob.size <= 256 * 1024) return blob;
+      }
+      return null;
+    })();
+  }
+
+  async function drawSourceToThumbnail(source, sourceWidth, sourceHeight, edge, quality = 0.72){
+    let canvas = null;
     try {
-      if (!('createImageBitmap' in window)) return null;
-      // Read only the GIF logical-screen dimensions before decoding. Skip unusually
-      // large GIFs to avoid allocating huge decoded frame buffers.
-      const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
-      if (head.length < 10 || String.fromCharCode(head[0],head[1],head[2]) !== 'GIF') return null;
-      const w = head[6] | (head[7] << 8), h = head[8] | (head[9] << 8);
-      if (!w || !h || w * h > 12000000 || file.size > 100 * 1024 * 1024) return null;
-      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, edge / Math.max(sourceWidth, sourceHeight));
+      const width = Math.max(1, Math.round(sourceWidth * scale));
+      const height = Math.max(1, Math.round(sourceHeight * scale));
+      canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d', { alpha:false });
+      if (!ctx) return null;
+      ctx.drawImage(source, 0, 0, width, height);
+      return await canvasToJpeg(canvas, quality);
+    } finally {
+      if (canvas) { canvas.width = 1; canvas.height = 1; }
+    }
+  }
+
+  async function makeImageElementThumbnail(file, edge){
+    // Older engines sometimes expose createImageBitmap but reject resize options.
+    // Limit full-size fallback decoding to modest files to protect phone memory.
+    const mobile = window.matchMedia('(max-width:820px)').matches;
+    const fallbackLimit = mobile ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > fallbackLimit) return null;
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.decoding = 'async';
+    try {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error('image decode failed'));
+        image.src = objectUrl;
+      });
+      if (!image.naturalWidth || !image.naturalHeight) return null;
+      return await drawSourceToThumbnail(image, image.naturalWidth, image.naturalHeight, edge);
+    } catch(e) {
+      return null;
+    } finally {
+      image.onload = null; image.onerror = null; image.src = '';
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  async function makeBitmapThumbnail(file){
+    const edge = previewMaxEdge();
+    if (typeof createImageBitmap !== 'function') return makeImageElementThumbnail(file, edge);
+    let bitmap = null;
+    try {
       try {
-        const scale = Math.min(1, 320 / Math.max(bitmap.width, bitmap.height));
-        const cw = Math.max(1, Math.round(bitmap.width * scale));
-        const ch = Math.max(1, Math.round(bitmap.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = cw; canvas.height = ch;
-        const ctx = canvas.getContext('2d', { alpha:false });
-        if (!ctx) return null;
-        ctx.drawImage(bitmap, 0, 0, cw, ch);
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.78));
-        canvas.width = 1; canvas.height = 1;
-        return blob || null;
-      } finally { bitmap.close(); }
-    } catch(e) { return null; }
+        bitmap = await createImageBitmap(file, { resizeWidth: edge, resizeQuality: 'high', imageOrientation: 'from-image' });
+      } catch(resizeError) {
+        // Some browser builds reject the resize options. Retry only for files small
+        // enough for a bounded full-resolution decode, then downscale immediately.
+        const mobile = window.matchMedia('(max-width:820px)').matches;
+        const fallbackLimit = mobile ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > fallbackLimit) return null;
+        bitmap = await createImageBitmap(file);
+      }
+      return await drawSourceToThumbnail(bitmap, bitmap.width, bitmap.height, edge);
+    } catch(e) {
+      if (bitmap && typeof bitmap.close === 'function') { bitmap.close(); bitmap = null; }
+      return await makeImageElementThumbnail(file, edge);
+    } finally {
+      if (bitmap && typeof bitmap.close === 'function') bitmap.close();
+    }
+  }
+
+  async function makeVideoThumbnail(file){
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const isMov = ext === 'mov' || (file.type || '').toLowerCase() === 'video/quicktime';
+    const mobile = window.matchMedia('(max-width:820px)').matches ||
+      (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4);
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    video.setAttribute('webkit-playsinline','');
+    return new Promise(resolve => {
+      let settled = false;
+      let capturing = false;
+      let seekRequested = false;
+      const timeoutMs = isMov ? (file.size > 150 * 1024 * 1024 ? 26000 : 18000) :
+        (file.size > 150 * 1024 * 1024 ? 18000 : 12000);
+      const finish = blob => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        clearTimeout(firstFrameFallback);
+        video.onloadedmetadata = null;
+        video.onloadeddata = null;
+        video.oncanplay = null;
+        video.onseeked = null;
+        video.onerror = null;
+        video.pause();
+        video.removeAttribute('src');
+        try { video.load(); } catch(e) {}
+        URL.revokeObjectURL(objectUrl);
+        resolve(blob || null);
+      };
+      const capture = async () => {
+        if (settled || capturing || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+        capturing = true;
+        let canvas = null;
+        try {
+          const edge = previewMaxEdge();
+          const scale = Math.min(1, edge / Math.max(video.videoWidth, video.videoHeight));
+          const width = Math.max(1, Math.round(video.videoWidth * scale));
+          const height = Math.max(1, Math.round(video.videoHeight * scale));
+          canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d', { alpha:false });
+          if (!ctx) return finish(null);
+          ctx.drawImage(video, 0, 0, width, height);
+          const blob = await canvasToJpeg(canvas, 0.82);
+          finish(blob);
+        } catch(e) {
+          finish(null);
+        } finally {
+          if (canvas) { canvas.width = 1; canvas.height = 1; }
+          capturing = false;
+        }
+      };
+      const timeout = setTimeout(() => finish(null), timeoutMs);
+      // Large MOV files can expose metadata slowly, especially when the moov
+      // atom is located near the end of the container. Keep a bounded fallback.
+      const firstFrameFallback = setTimeout(() => {
+        if (video.readyState >= 2 && video.videoWidth && video.videoHeight) capture();
+      }, isMov ? 6500 : 3500);
+      video.onerror = () => finish(null);
+      video.onloadedmetadata = () => {
+        const width = video.videoWidth || 0;
+        const height = video.videoHeight || 0;
+        const pixels = width * height;
+        const memoryGb = Number(navigator.deviceMemory) || 0;
+        const veryHighResolution = Math.max(width,height) > 4096 || pixels > 3840 * 2160;
+        const highResolutionOnLowMemoryPhone = mobile && memoryGb > 0 && memoryGb <= 3 &&
+          (Math.max(width,height) > 1920 || pixels > 1920 * 1080);
+        // Allow 4K poster capture on normal mobile devices. Keep conservative
+        // limits for extreme resolutions and phones reporting <=3 GB of RAM.
+        if (veryHighResolution || highResolutionOnLowMemoryPhone) return finish(null);
+        if (video.duration > 0.15 && Number.isFinite(video.duration)) {
+          const target = Math.min(0.45, Math.max(0.08, video.duration * 0.08));
+          try {
+            seekRequested = true;
+            video.currentTime = target;
+          } catch(e) {
+            seekRequested = false;
+          }
+        }
+      };
+      video.onloadeddata = () => {
+        // Do not capture frame 0 while a successful seek is still in progress.
+        if (!seekRequested || !video.seeking) capture();
+      };
+      video.oncanplay = () => { if (!video.seeking) capture(); };
+      video.onseeked = capture;
+      video.src = objectUrl;
+      try { video.load(); } catch(e) { finish(null); }
+    });
+  }
+
+  async function makeMediaThumbnail(file){
+    const type = (file.type || '').toLowerCase();
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const isGif = ext === 'gif' || type === 'image/gif';
+    const isVideo = type.startsWith('video/') || ['mp4','webm','mkv','mov','m4v','avi','ogv','3gp','mpg','mpeg'].includes(ext);
+    const isImage = isGif || type.startsWith('image/') || ['jpg','jpeg','png','webp','bmp','ico','svg','avif','jfif','tif','tiff','heic','heif'].includes(ext);
+    if (isGif) {
+      try {
+        const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+        if (head.length < 10 || String.fromCharCode(head[0],head[1],head[2]) !== 'GIF') return null;
+        const width = head[6] | (head[7] << 8), height = head[8] | (head[9] << 8);
+        if (!width || !height || width * height > 12000000 || file.size > 100 * 1024 * 1024) return null;
+      } catch(e) { return null; }
+    }
+    if (isVideo) return makeVideoThumbnail(file);
+    if (isImage) return makeBitmapThumbnail(file);
+    return null;
+  }
+
+  function queuePreviewImage(img, src){
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.dataset.previewSrc = src;
+    if (previewObserver) previewObserver.observe(img);
+    else img.src = src;
   }
 
   function makeThumb(f){
@@ -1020,25 +1364,21 @@
     const ext = (f.name.split('.').pop() || '').toLowerCase();
     const mime = (f.mime || '').toLowerCase();
     const isGif = ext === 'gif' || mime === 'image/gif';
-    const isImage = !isGif && (mime.startsWith('image/') || ['jpg','jpeg','png','webp','bmp','ico','svg','avif','jfif'].includes(ext));
-    const isVideo = mime.startsWith('video/') || ['mp4','webm','mkv','mov','m4v','ogv'].includes(ext);
-    const fallback = () => { layer.innerHTML = '<span class="emoji">' + getFileIcon(f.name, f.mime) + '</span>'; };
-
-    const localUrl = localPreviews.get(f.id);
-    const previewUrl = localUrl || '/api/preview/' + encodeURIComponent(f.id) + '?t=' + (f.received || f.time || Date.now());
-    if (isGif && previewUrl){
-      const img = document.createElement('img'); img.src = previewUrl; img.loading = 'lazy'; let gifRetry=0; img.onerror = () => { if(gifRetry++ < 3) setTimeout(()=>{img.src=previewUrl+'&retry='+Date.now();},700); else fallback(); }; layer.appendChild(img);
-      const tag = document.createElement('div'); tag.className = 'gif-ov'; tag.textContent = 'GIF'; layer.appendChild(tag);
-    } else if (isImage && previewUrl){
-      const img = document.createElement('img'); img.src = previewUrl; img.loading = 'lazy'; img.onerror = fallback; layer.appendChild(img);
-    } else if (isVideo && previewUrl && f.size < 500 * 1024 * 1024){
-      const video = document.createElement('video'); video.src = previewUrl + '#t=0.1';
-      video.preload = 'auto'; video.muted = true; video.playsInline = true; video.onerror = fallback;
-      video.addEventListener('loadedmetadata', () => { try { if (video.duration > 0.15) video.currentTime = Math.min(0.5, video.duration / 2); } catch (e) {} });
-      video.addEventListener('loadeddata', () => { try { video.pause(); } catch (e) {} });
-      layer.appendChild(video);
-      const play = document.createElement('div'); play.className = 'play-ov'; play.textContent = '▶'; layer.appendChild(play);
-    } else { fallback(); }
+    const isImage = !isGif && (mime.startsWith('image/') || ['jpg','jpeg','png','webp','bmp','ico','svg','avif','jfif','tif','tiff'].includes(ext));
+    const isVideo = mime.startsWith('video/') || ['mp4','webm','mkv','mov','m4v','avi','ogv','3gp','mpg','mpeg'].includes(ext);
+    const isAudio = mime.startsWith('audio/') || ['mp3','flac','wav','ogg','oga','opus','m4a','m4b','aac','wma','aiff','aif','aifc','ape','alac','wv','mpc','mka','dsf','dff','tta','tak','mid','midi'].includes(ext);
+    const fallback = () => { layer.replaceChildren(); const span=document.createElement('span'); span.className='emoji'; span.textContent=getFileIcon(f.name,f.mime); layer.appendChild(span); };
+    const hasPreview = f.status === 'ready' && Boolean(f.hasPreview);
+    if ((isGif || isImage || isVideo || isAudio) && hasPreview){
+      const img = document.createElement('img');
+      img.alt = '';
+      img.onerror = fallback;
+      const previewUrl = '/api/preview/' + encodeURIComponent(f.id);
+      queuePreviewImage(img, previewUrl);
+      layer.appendChild(img);
+      if (isGif){ const tag=document.createElement('div'); tag.className='gif-ov'; tag.textContent='GIF'; layer.appendChild(tag); }
+      if (isVideo){ const play=document.createElement('div'); play.className='play-ov'; play.textContent='▶'; layer.appendChild(play); }
+    } else fallback();
     wrap.append(layer, grey); return wrap;
   }
 
@@ -1059,10 +1399,96 @@
   }
 
   let selectionMode = false;
+  let selectionAction = '';
   const selectedFileIds = new Set();
+  let readyZipFileCount = 0;
   let trashHoldTimer = null;
   let suppressTrashClick = false;
-  function setSelectionMode(on){ selectionMode = on; selectedFileIds.clear(); $('#fileList').classList.toggle('selection-mode', on); $('#trashAll').classList.toggle('selecting', on); state.filesHash=''; pollFiles(); }
+
+  function updateZipButtonState(){
+    const button = $('#downloadExcept');
+    const label = $('#zipButtonLabel');
+    const cancel = $('#cancelZipSelection');
+    const active = selectionMode && selectionAction === 'zip-selected';
+    button.classList.toggle('active', active);
+    cancel.hidden = !active;
+
+    if (active){
+      const count = selectedFileIds.size;
+      label.textContent = `${t('zip_selected_download')} (${count})`;
+      button.disabled = count === 0;
+      button.title = count ? `${t('zip_selected_download')} (${count})` : t('zip_selected_empty');
+      button.setAttribute('aria-label', button.title);
+    } else {
+      label.textContent = t('zip_selected_select');
+      button.disabled = readyZipFileCount === 0;
+      button.title = t('zip_selected_select');
+      button.setAttribute('aria-label', button.title);
+    }
+    cancel.title = t('zip_selected_cancel');
+    cancel.setAttribute('aria-label', t('zip_selected_cancel'));
+  }
+
+  function setSelectionMode(on, action = 'delete'){
+    selectionMode = Boolean(on);
+    selectionAction = selectionMode ? action : '';
+    selectedFileIds.clear();
+    $('#fileList').classList.toggle('selection-mode', selectionMode);
+    $('#trashAll').classList.toggle('selecting', selectionMode && selectionAction === 'delete');
+    updateZipButtonState();
+    state.filesHash='';
+    pollFiles();
+  }
+
+  async function downloadFilesSelected(){
+    const button = $('#downloadExcept');
+    const selectedIds = Array.from(selectedFileIds);
+    if (!selectedIds.length) return;
+    button.disabled = true;
+    setBanner(t('zip_starting'));
+    try {
+      // The server prepares a short-lived URL. The browser performs a native
+      // download, so the ZIP is never buffered into a JavaScript Blob.
+      const response = await fetch('/api/files/zip-selected', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ selectedIds })
+      });
+
+      let result = {};
+      try { result = await response.json(); } catch (e) {}
+      if (!response.ok) {
+        const serverError = String(result.error || '');
+        if (serverError.includes('no selected files') || serverError.includes('no accessible uploaded files') || serverError.includes('no longer available')) {
+          throw new Error(t('zip_no_files'));
+        }
+        const detail = serverError ? ' ' + serverError.slice(0,220) : '';
+        throw new Error(t('zip_failed') + detail);
+      }
+      if (!result.downloadUrl || typeof result.downloadUrl !== 'string') {
+        throw new Error(t('zip_failed') + ' Invalid download link.');
+      }
+
+      const anchor = document.createElement('a');
+      anchor.href = result.downloadUrl;
+      anchor.download = 'Win-AirLink-selected.zip';
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+
+      setSelectionMode(false);
+      state.filesHash = '';
+      pollFiles();
+      setBanner(t('zip_started'));
+      setTimeout(() => setBanner(''), 5000);
+    } catch(error) {
+      setBanner(error.message || t('zip_failed'));
+      setTimeout(() => setBanner(''), 6500);
+    } finally {
+      updateZipButtonState();
+    }
+  }
   let filesInitialized = false;
   const displayedProgress = new Map();
   const completionGlowTimers = new Map();
@@ -1087,6 +1513,7 @@
 
   function renderFiles(list){
     const ul = $('#fileList');
+    if (previewObserver) previewObserver.disconnect();
     const folderGroups = new Map();
     const completedFiles = new Set();
     const startedFiles = new Set();
@@ -1094,7 +1521,11 @@
     for (const f of list){
       const prev = state.knownFiles.get(f.id);
       if (filesInitialized && !prev && f.status === 'uploading') startedFiles.add(f.id);
-      if (f.status === 'ready' && prev && prev.status === 'uploading') {
+      // A very fast transfer (for example, a small photo) may be first observed
+      // after it is already ready. Treat newly appeared ready files as completed too.
+      const newlyReceivedReadyFile = filesInitialized && !prev && f.status === 'ready';
+      const uploadJustCompleted = f.status === 'ready' && prev && prev.status === 'uploading';
+      if (newlyReceivedReadyFile || uploadJustCompleted) {
         completedFiles.add(f.id);
         completionGlowTimers.set(f.id, Date.now() + 2700);
         setTimeout(() => {
@@ -1108,6 +1539,10 @@
     const count = list.length;
     $('#fileCount').textContent = count ? '(' + count + ')' : '';
     $('#trashAll').disabled = count === 0;
+    const readyIds = new Set(list.filter(f => f.status === 'ready').map(f => f.id));
+    readyZipFileCount = readyIds.size;
+    for (const id of selectedFileIds) if (!readyIds.has(id)) selectedFileIds.delete(id);
+    updateZipButtonState();
 
     let activeUploads = 0, totalPct = 0;
 
@@ -1148,7 +1583,16 @@
           }
         }
         if (completionGlowTimers.has(f.id) && completionGlowTimers.get(f.id) > Date.now()) li.classList.add('just-ready');
-        if (selectionMode && f.status === 'ready') { const cb=document.createElement('input'); cb.type='checkbox'; cb.className='file-select'; cb.checked=selectedFileIds.has(f.id); cb.addEventListener('change',()=>{ if(cb.checked) selectedFileIds.add(f.id); else selectedFileIds.delete(f.id); }); li.appendChild(cb); }
+        if (selectionMode && f.status === 'ready') {
+          const cb=document.createElement('input'); cb.type='checkbox'; cb.className='file-select';
+          cb.checked=selectedFileIds.has(f.id);
+          cb.setAttribute('aria-label', currentLang()==='en' ? `Include ${f.name} in ZIP` : `Включить ${f.name} в ZIP`);
+          cb.addEventListener('change',()=>{
+            if(cb.checked) selectedFileIds.add(f.id); else selectedFileIds.delete(f.id);
+            updateZipButtonState();
+          });
+          li.appendChild(cb);
+        }
 
         let pct = 0;
         const previousPct = displayedProgress.get(f.id) || 0;
@@ -1202,12 +1646,49 @@
     if (completedFiles.size > 0) playSound('file-complete');
     for (const f of list) state.knownFiles.set(f.id, f);
 
-    const headerPct = $('#uploadPct'), pctVal = $('#pctVal');
-    if (activeUploads > 0) { headerPct.hidden = false; pctVal.textContent = Math.round(totalPct / activeUploads) + '%'; }
-    else { headerPct.hidden = true; }
+    const headerPct = $('#uploadPct'), pctVal = $('#pctVal'), progressFill = $('#uploadProgressBar');
+    if (activeUploads > 0) {
+      const averagePct = Math.round(totalPct / activeUploads);
+      headerPct.hidden = false;
+      pctVal.textContent = averagePct + '%';
+      progressFill.style.width = averagePct + '%';
+      headerPct.setAttribute('aria-label', `${t('receiving')} ${averagePct}%`);
+    } else {
+      headerPct.hidden = true;
+      progressFill.style.width = '0%';
+    }
   }
 
   let filesPolling = false;
+  let activeUploadsCount = 0;
+  function updateUploadProgress(list){
+    let totalPct = 0;
+    activeUploadsCount = 0;
+    for (const f of list){
+      if (f.status !== 'uploading') continue;
+      activeUploadsCount++;
+      const pct = Math.min(100, Math.round((Number(f.received || 0) / Math.max(1, Number(f.size || 0))) * 100));
+      totalPct += pct;
+      const card = document.getElementById('file-' + f.id);
+      if (card){
+        card.classList.add('uploading');
+        card.style.setProperty('--progress', pct + '%');
+        const badge = card.querySelector('.upload-pct');
+        if (badge) badge.textContent = pct + '%';
+      }
+    }
+    const headerPct = $('#uploadPct'), pctVal = $('#pctVal'), progressFill = $('#uploadProgressBar');
+    if (activeUploadsCount > 0){
+      const averagePct = Math.round(totalPct / activeUploadsCount);
+      headerPct.hidden = false;
+      pctVal.textContent = averagePct + '%';
+      progressFill.style.width = averagePct + '%';
+      headerPct.setAttribute('aria-label', `${t('receiving')} ${averagePct}%`);
+    } else {
+      headerPct.hidden = true;
+      progressFill.style.width = '0%';
+    }
+  }
   async function pollFiles(){
     if (filesPolling) return;
     filesPolling = true;
@@ -1215,11 +1696,13 @@
       const r = await fetch('/api/files', { cache: 'no-store' });
       if (!r.ok) return;
       const list = await r.json();
-      const hash = JSON.stringify(list.map(f => f.id + '|' + f.name + '|' + f.size + '|' + f.status + '|' + f.received));
+      // received changes frequently during uploads. Keep those updates out of the full DOM render.
+      const hash = JSON.stringify(list.map(f => [f.id,f.name,f.size,f.status,f.relativePath,f.mime,f.hasPreview]));
       if (hash !== state.filesHash) {
         state.filesHash = hash;
         renderFiles(list);
       }
+      updateUploadProgress(list);
       filesInitialized = true;
     } catch (e) {
     } finally {
@@ -1232,16 +1715,6 @@
 
   async function uploadOne(file, onProgress){
     const fileId = 'f' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    const ext = (file.name.split('.').pop() || '').toLowerCase();
-    const isGif = ext === 'gif' || file.type === 'image/gif';
-    let gifBlob = null;
-    if (isGif) {
-      gifBlob = await makeGifStill(file);
-      if (gifBlob) localPreviews.set(fileId, URL.createObjectURL(gifBlob));
-    } else if (file.type && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
-      localPreviews.set(fileId, URL.createObjectURL(file));
-    }
-
     try {
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -1251,35 +1724,43 @@
         xhr.setRequestHeader('X-File-Id', fileId);
         if (file.webkitRelativePath) xhr.setRequestHeader('X-Relative-Path', btoa(unescape(encodeURIComponent(file.webkitRelativePath))));
         xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-        xhr.upload.onprogress = (e) => { if (e.lengthComputable) { onProgress(Math.round((e.loaded / e.total) * 100)); pollFiles(); } };
+        let lastProgressPoll = 0;
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          onProgress(Math.round((e.loaded / e.total) * 100));
+          const now = Date.now();
+          if (now - lastProgressPoll >= 900) { lastProgressPoll = now; pollFiles(); }
+        };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
           else reject(new Error('HTTP ' + xhr.status));
         };
         xhr.onerror = () => reject(new Error('network'));
+        xhr.onabort = () => reject(new Error('aborted'));
         xhr.send(file);
       });
 
-      // Store only the compact still image for other connected clients.
-      if (isGif && gifBlob) {
-        try {
-          await fetch('/api/preview/' + encodeURIComponent(fileId), {
-            method:'POST', headers:{'Content-Type':'image/jpeg'}, body:gifBlob
-          });
-        } catch(e) {}
+      // Generate and persist a compact poster only after the original upload is complete.
+      // The original File object is sent unchanged above; this JPEG is stored separately.
+      const thumbBlob = await makeMediaThumbnail(file);
+      if (thumbBlob){
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const response = await fetch('/api/preview/' + encodeURIComponent(fileId), {
+              method:'POST', headers:{'Content-Type':'image/jpeg'}, body:thumbBlob
+            });
+            if (response.ok) break;
+            if (response.status === 413 || response.status === 415 || attempt === 1) break;
+          } catch(e) {
+            if (attempt === 1) break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
       }
+      state.filesHash = '';
+      await pollFiles();
     } catch(err) {
-      if (localPreviews.has(fileId)) { URL.revokeObjectURL(localPreviews.get(fileId)); localPreviews.delete(fileId); }
       throw err;
-    } finally {
-      if (localPreviews.has(fileId)) {
-        // Keep the local preview until the file list confirms the server-side preview is ready.
-        setTimeout(() => {
-          if (localPreviews.has(fileId)) { URL.revokeObjectURL(localPreviews.get(fileId)); localPreviews.delete(fileId); }
-          state.filesHash = '';
-          pollFiles();
-        }, 5000);
-      }
     }
   }
 
@@ -1366,12 +1847,33 @@
       setTimeout(async () => { try { await fetch('/api/messages', { method: 'DELETE' }); state.messagesHash = ''; await pollMessages(); } catch (e) {} }, 620);
     });
 
+    const downloadExcept = $('#downloadExcept');
+    downloadExcept.addEventListener('click', async () => {
+      if (!selectionMode || selectionAction !== 'zip-selected') {
+        setSelectionMode(true, 'zip-selected');
+        setBanner('');
+        return;
+      }
+      await downloadFilesSelected();
+    });
+    $('#cancelZipSelection').addEventListener('click', () => setSelectionMode(false));
+
     const trash = $('#trashAll');
-    trash.addEventListener('pointerdown', () => { trashHoldTimer = setTimeout(() => { trashHoldTimer=null; suppressTrashClick=true; setSelectionMode(!selectionMode); }, 650); });
+    trash.addEventListener('pointerdown', () => {
+      trashHoldTimer = setTimeout(() => {
+        trashHoldTimer=null; suppressTrashClick=true;
+        setSelectionMode(!(selectionMode && selectionAction === 'delete'), 'delete');
+      }, 650);
+    });
     ['pointerup','pointerleave','pointercancel'].forEach(ev => trash.addEventListener(ev, () => { if(trashHoldTimer){clearTimeout(trashHoldTimer);trashHoldTimer=null;} }));
     trash.addEventListener('click', async () => {
       if (suppressTrashClick) { suppressTrashClick=false; return; }
-      if (selectionMode) {
+      if (selectionMode && selectionAction === 'zip-selected') {
+        setBanner(t('zip_using_delete'));
+        setTimeout(() => setBanner(''), 5000);
+        return;
+      }
+      if (selectionMode && selectionAction === 'delete') {
         if (!selectedFileIds.size) { setSelectionMode(false); return; }
         if (!confirm(currentLang()==='en' ? `Delete ${selectedFileIds.size} selected files?` : `Удалить выбранные файлы (${selectedFileIds.size})?`)) return;
         const ids = Array.from(selectedFileIds);
@@ -1386,14 +1888,37 @@
       setTimeout(async () => { try { await fetch('/api/files/all', { method: 'DELETE' }); state.filesHash = ''; pollFiles(); } catch (e) {} }, 620);
     });
 
-    await refreshInfo(); await pollClients(); updateDiskSpace();
-    pollMessages(); pollFiles();
+    await refreshInfo(); await pollClients(); await updateDiskSpace();
+    await pollMessages(); await pollFiles();
 
-    setInterval(refreshInfo, 10000);
-    setInterval(pollClients, 3000);
-    setInterval(updateDiskSpace, 15000);
-    setInterval(pollMessages, 1500);
-    setInterval(pollFiles, 1000);
+    const pollTimers = Object.create(null);
+    function stopPollingLoops(){
+      for (const key of Object.keys(pollTimers)) { clearTimeout(pollTimers[key]); delete pollTimers[key]; }
+    }
+    function schedulePoll(key, fn, delay){
+      const wait = typeof delay === 'function' ? delay() : delay;
+      pollTimers[key] = setTimeout(async () => {
+        delete pollTimers[key];
+        if (document.hidden) return;
+        await fn();
+        if (!document.hidden) schedulePoll(key, fn, delay);
+      }, wait);
+    }
+    function startPollingLoops(immediate=false){
+      stopPollingLoops();
+      if (document.hidden) return;
+      const first = immediate ? 0 : 1000;
+      schedulePoll('info', refreshInfo, immediate ? first : 30000);
+      schedulePoll('clients', pollClients, immediate ? first : 5000);
+      schedulePoll('disk', updateDiskSpace, immediate ? first : 30000);
+      schedulePoll('messages', pollMessages, immediate ? first : 1500);
+      schedulePoll('files', pollFiles, immediate ? first : (() => activeUploadsCount ? 1100 : 4500));
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopPollingLoops();
+      else startPollingLoops(true);
+    });
+    startPollingLoops(false);
   })();
 
 })();

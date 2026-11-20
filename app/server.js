@@ -4,10 +4,25 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { exec, spawn, execSync } = require('child_process');
+let archiver;
+try {
+  archiver = require('archiver');
+} catch (err) {
+  console.error('[Win-AirLink] Missing dependency "archiver". Open a terminal in the project folder and run: npm install');
+  process.exit(1);
+}
+const { pipeline, Transform } = require('stream');
+const { exec, spawn } = require('child_process');
 const { URL } = require('url');
 const QRCode = require('./qr');
 const QRErrorCorrectLevel = require('./qr/QRErrorCorrectLevel');
+
+let parseAudioFile = null;
+let sharpImage = null;
+try { ({ parseFile: parseAudioFile } = require('music-metadata')); }
+catch (err) { console.warn('[Win-AirLink] Audio-cover metadata support is unavailable. Run npm install.'); }
+try { sharpImage = require('sharp'); }
+catch (err) { console.warn('[Win-AirLink] Audio-cover image processing is unavailable. Run npm install.'); }
 
 const ROOT = __dirname;
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
@@ -17,53 +32,59 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 const FILES_FILE    = path.join(DATA_DIR, 'files.json');
+const INDEX_FILE = path.join(ROOT, 'index.html');
+let INDEX_HTML = null;
+try { INDEX_HTML = fs.readFileSync(INDEX_FILE); } catch (e) {}
 
 const messages = [];
 let seq = 0;
 const files = new Map(); 
 const clients = new Map();
+const zipDownloadTokens = new Map();
 
-function getDiskSpace() {
+async function getDiskSpace() {
   try {
-    if (typeof fs.statfsSync === 'function') {
-      const stats = fs.statfsSync(ROOT);
+    let stats = null;
+    if (fs.promises && typeof fs.promises.statfs === 'function') stats = await fs.promises.statfs(ROOT);
+    else if (typeof fs.statfsSync === 'function') stats = fs.statfsSync(ROOT);
+    if (stats) {
       const totalBytes = stats.blocks * stats.bsize;
       const freeBytes = stats.bfree * stats.bsize;
       const usedBytes = totalBytes - freeBytes;
-      
-      const freeGB = (freeBytes / 1073741824).toFixed(1);
-      const freeMB = (freeBytes / 1048576).toFixed(0);
-      
       return {
         total: (totalBytes / 1073741824).toFixed(1),
         used: (usedBytes / 1073741824).toFixed(1),
-        freeGB,
-        freeMB,
-        percent: Math.round((usedBytes / totalBytes) * 100)
+        freeGB: (freeBytes / 1073741824).toFixed(1),
+        freeMB: (freeBytes / 1048576).toFixed(0),
+        percent: totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 100) : 0
       };
     }
   } catch (e) {}
 
-  try {
-    if (process.platform === 'win32') {
-      const drive = path.parse(ROOT).root.replace('\\', '');
-      const cmd = `powershell -command "Get-PSDrive ${drive.replace(':', '')} | Select-Object -Property Used,Free | ConvertTo-Json"`;
-      const stdout = execSync(cmd, { encoding: 'utf8', windowsHide: true });
+  // Older Node builds on Windows may lack statfs. Keep this fallback asynchronous.
+  if (process.platform === 'win32') {
+    try {
+      const drive = path.parse(ROOT).root.replace('\\', '').replace(':', '');
+      const command = `Get-PSDrive ${drive} | Select-Object -Property Used,Free | ConvertTo-Json`;
+      const stdout = await new Promise((resolve, reject) => {
+        exec(`powershell -NoProfile -NonInteractive -Command "${command}"`, {
+          encoding: 'utf8', windowsHide: true, timeout: 5000, maxBuffer: 16 * 1024
+        }, (error, output) => error ? reject(error) : resolve(output));
+      });
       const data = JSON.parse(stdout);
-      if (data.Used !== undefined && data.Free !== undefined) {
+      if (Number.isFinite(data.Used) && Number.isFinite(data.Free)) {
         const totalBytes = data.Used + data.Free;
-        const usedBytes = data.Used;
         const freeBytes = data.Free;
         return {
           total: (totalBytes / 1073741824).toFixed(1),
-          used: (usedBytes / 1073741824).toFixed(1),
+          used: (data.Used / 1073741824).toFixed(1),
           freeGB: (freeBytes / 1073741824).toFixed(1),
           freeMB: (freeBytes / 1048576).toFixed(0),
-          percent: Math.round((usedBytes / totalBytes) * 100)
+          percent: totalBytes > 0 ? Math.round((data.Used / totalBytes) * 100) : 0
         };
       }
-    }
-  } catch(e) {}
+    } catch (e) {}
+  }
   return { error: 'unavailable' };
 }
 
@@ -106,8 +127,12 @@ const MIME_MAP = {
   avi:'video/x-msvideo', m4v:'video/x-m4v', ogv:'video/ogg', wmv:'video/x-ms-wmv',
   flv:'video/x-flv', '3gp':'video/3gpp', mpg:'video/mpeg', mpeg:'video/mpeg',
   ts:'video/mp2t', mts:'video/mp2t',
-  mp3:'audio/mpeg', wav:'audio/wav', ogg:'audio/ogg', flac:'audio/flac',
-  m4a:'audio/mp4', aac:'audio/aac', opus:'audio/opus',
+  mp3:'audio/mpeg', wav:'audio/wav', ogg:'audio/ogg', oga:'audio/ogg', flac:'audio/flac',
+  m4a:'audio/mp4', m4b:'audio/mp4', aac:'audio/aac', opus:'audio/opus',
+  wma:'audio/x-ms-wma', aiff:'audio/aiff', aif:'audio/aiff', aifc:'audio/aiff',
+  ape:'audio/ape', alac:'audio/alac', wv:'audio/wavpack', mpc:'audio/x-musepack',
+  mka:'audio/x-matroska', dsf:'audio/dsf', dff:'audio/dff', tta:'audio/tta', tak:'audio/tak',
+  mid:'audio/midi', midi:'audio/midi',
   pdf:'application/pdf', txt:'text/plain', md:'text/markdown',
   html:'text/html', css:'text/css', js:'application/javascript',
   json:'application/json', xml:'application/xml',
@@ -121,6 +146,136 @@ const MIME_MAP = {
 function getMimeByName(name){
   const ext = (name.split('.').pop() || '').toLowerCase();
   return MIME_MAP[ext] || '';
+}
+
+function getJpegDimensions(buffer){
+  if (!Buffer.isBuffer(buffer) || buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) return null;
+  const sof = new Set([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf]);
+  let offset = 2;
+  while (offset < buffer.length - 3){
+    if (buffer[offset] !== 0xff) { offset++; continue; }
+    while (buffer[offset] === 0xff) offset++;
+    const marker = buffer[offset++];
+    if (marker === 0xd8 || marker === 0xd9 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (offset + 2 > buffer.length) break;
+    const length = buffer.readUInt16BE(offset);
+    if (length < 2 || offset + length > buffer.length) break;
+    if (sof.has(marker) && length >= 7){
+      return { height:buffer.readUInt16BE(offset + 3), width:buffer.readUInt16BE(offset + 5) };
+    }
+    offset += length;
+  }
+  return null;
+}
+
+// Keep generated posters in a dedicated subdirectory. A fixed sibling name such
+// as "preview.jpg" collides with a perfectly valid user upload of the same name.
+function previewStoragePath(file){
+  const posterDir = path.join(path.dirname(file.path), path.basename(file.path) + '.win-airlink-preview');
+  return path.join(posterDir, 'preview.jpg');
+}
+function sameResolvedPath(a, b){
+  const left = path.resolve(a), right = path.resolve(b);
+  return process.platform === 'win32' ? left.toLowerCase() === right.toLowerCase() : left === right;
+}
+function resolveStoredPreviewPath(file){
+  const currentPath = previewStoragePath(file);
+  try { if (fs.statSync(currentPath).isFile()) return currentPath; } catch (e) {}
+
+  // Backward compatibility with v1.1.1's former preview.jpg location.
+  // Never mistake an original upload named preview.jpg for its own thumbnail.
+  const legacyPath = path.join(path.dirname(file.path), 'preview.jpg');
+  if (sameResolvedPath(legacyPath, file.path)) return null;
+  try { if (fs.statSync(legacyPath).isFile()) return legacyPath; } catch (e) {}
+  return null;
+}
+
+const AUDIO_EXTENSIONS = new Set([
+  'mp3','flac','wav','ogg','oga','opus','m4a','m4b','aac','wma',
+  'aiff','aif','aifc','ape','alac','wv','mpc','mka','dsf','dff','tta','tak','mid','midi'
+]);
+function isAudioFile(file){
+  const mime = String(file && file.mime || '').toLowerCase();
+  const ext = path.extname(String(file && file.name || '')).slice(1).toLowerCase();
+  return mime.startsWith('audio/') || AUDIO_EXTENSIONS.has(ext);
+}
+
+// Artwork extraction runs off the upload request and one track at a time. This
+// keeps large music batches from spiking CPU/RAM while all clients share the
+// resulting JPEG through the existing /api/preview endpoint.
+const audioCoverQueue = [];
+const audioCoverQueuedIds = new Set();
+let audioCoverWorkerRunning = false;
+function enqueueAudioCover(file){
+  if (!file || file.status !== 'ready' || !isAudioFile(file) || file.hasPreview || file.audioCoverChecked) return;
+  if (!parseAudioFile || !sharpImage) return;
+  if (audioCoverQueuedIds.has(file.id)) return;
+  audioCoverQueuedIds.add(file.id);
+  audioCoverQueue.push(file);
+  void drainAudioCoverQueue();
+}
+async function extractAudioCover(file){
+  const metadata = await parseAudioFile(file.path, { duration:false });
+  const pictures = metadata && metadata.common && Array.isArray(metadata.common.picture)
+    ? metadata.common.picture : [];
+  if (!pictures.length) return false;
+
+  // Prefer a front-cover picture, then use the first embedded image available.
+  const picture = pictures.find(item => /front/i.test(String(item.type || ''))) || pictures[0];
+  const raw = Buffer.isBuffer(picture.data) ? picture.data : Buffer.from(picture.data || []);
+  if (!raw.length || raw.length > 16 * 1024 * 1024) return false;
+
+  const result = await sharpImage(raw, { failOn:'none', limitInputPixels:40_000_000 })
+    .rotate()
+    .resize({ width:256, height:256, fit:'inside', withoutEnlargement:true })
+    .jpeg({ quality:86, mozjpeg:true })
+    .toBuffer({ resolveWithObject:true });
+  if (!result || !result.data || !result.info || !result.info.width || !result.info.height) return false;
+  if (result.info.width > 256 || result.info.height > 256 || result.data.length > 320 * 1024) return false;
+  if (files.get(file.id) !== file || file.status !== 'ready') return false;
+
+  const previewPath = previewStoragePath(file);
+  const previewDir = path.dirname(previewPath);
+  const tempPath = previewPath + '.' + process.pid + '.tmp';
+  await fs.promises.mkdir(previewDir, { recursive:true });
+  try {
+    await fs.promises.writeFile(tempPath, result.data);
+    // On Windows rename does not replace an existing target, so remove it first.
+    await fs.promises.rm(previewPath, { force:true });
+    await fs.promises.rename(tempPath, previewPath);
+    file.hasPreview = true;
+    return true;
+  } finally {
+    await fs.promises.rm(tempPath, { force:true }).catch(() => {});
+  }
+}
+async function drainAudioCoverQueue(){
+  if (audioCoverWorkerRunning) return;
+  audioCoverWorkerRunning = true;
+  try {
+    while (audioCoverQueue.length){
+      const file = audioCoverQueue.shift();
+      if (!file) continue;
+      try {
+        if (files.get(file.id) === file && file.status === 'ready' && !file.hasPreview) {
+          await extractAudioCover(file);
+        }
+        file.audioCoverChecked = true;
+        saveState();
+      } catch (err) {
+        // Mark this file as checked to avoid repeating a corrupt/unsupported tag
+        // parse on every poll or every server restart.
+        file.audioCoverChecked = true;
+        console.warn('[Win-AirLink] Could not extract embedded audio artwork for', file.name + ':', err.message || err);
+        saveState();
+      } finally {
+        audioCoverQueuedIds.delete(file.id);
+      }
+    }
+  } finally {
+    audioCoverWorkerRunning = false;
+    if (audioCoverQueue.length) void drainAudioCoverQueue();
+  }
 }
 
 function getLocalIPs(){
@@ -171,12 +326,181 @@ function readBody(req, limit = 1e6){
 const publicFile = f => ({
   id: f.id, name: f.name, size: f.size, mime: f.mime || '',
   time: f.time, status: f.status || 'ready', relativePath: f.relativePath || '',
-  received: f.status === 'uploading' ? (f.received || 0) : f.size
+  received: f.status === 'uploading' ? (f.received || 0) : f.size,
+  hasPreview: Boolean(f.hasPreview)
 });
 function contentDisposition(name, attachment = true){
   const ascii = name.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '\\"');
   const star = encodeURIComponent(name).replace(/[!'()*]/g, ch => '%' + ch.charCodeAt(0).toString(16).toUpperCase());
   return `${attachment ? 'attachment' : 'inline'}; filename="${ascii}"; filename*=UTF-8''${star}`;
+}
+
+// ZIP archive generation uses archiver and streams source files directly.
+// No temporary staging directory and no full archive buffer are created.
+function uniqueZipName(parts, used) {
+  const safe = parts.map(safeDiskName).filter(Boolean);
+  if (!safe.length) safe.push('file');
+  const filename = safe.pop();
+  const dot = filename.lastIndexOf('.');
+  const stem = dot > 0 ? filename.slice(0, dot) : filename;
+  const ext = dot > 0 ? filename.slice(dot) : '';
+  let candidate = [...safe, filename];
+  let value = candidate.join('/');
+  const keyOf = v => process.platform === 'win32' ? v.toLowerCase() : v;
+  let n = 2;
+  while (used.has(keyOf(value))) {
+    candidate = [...safe, `${stem} (${n++})${ext}`];
+    value = candidate.join('/');
+  }
+  used.add(keyOf(value));
+  return { parts: candidate, name: value };
+}
+
+async function buildZipJobs(fileEntries) {
+  const uploadRoot = path.resolve(UPLOAD_DIR);
+  const rootPrefix = uploadRoot.endsWith(path.sep) ? uploadRoot : uploadRoot + path.sep;
+  const rootKey = process.platform === 'win32' ? rootPrefix.toLowerCase() : rootPrefix;
+  const used = new Set();
+  const jobs = [];
+
+  for (const item of fileEntries) {
+    const f = item.file;
+    const source = path.resolve(f.path);
+    const sourceKey = process.platform === 'win32' ? source.toLowerCase() : source;
+    if (!sourceKey.startsWith(rootKey)) continue;
+
+    let stat;
+    try { stat = await fs.promises.stat(source); }
+    catch (err) { continue; }
+
+    if (!stat.isFile()) continue;
+    const picked = uniqueZipName(item.parts || [f.name || path.basename(source)], used);
+    jobs.push({
+      source,
+      size: stat.size,
+      name: picked.name,
+      mtime: stat.mtime
+    });
+  }
+  return jobs;
+}
+
+async function streamZipResponse(req, res, fileEntries, downloadName) {
+  let jobs;
+  try {
+    jobs = await buildZipJobs(fileEntries);
+  } catch (err) {
+    console.error('Win-AirLink ZIP preparation failed:', err && err.stack || err);
+    if (!res.headersSent && !res.destroyed) {
+      return json(res, { ok:false, error:String(err.message || 'ZIP preparation failed').slice(0,500) }, 500);
+    }
+    if (!res.destroyed) res.destroy(err);
+    return;
+  }
+
+  if (!jobs.length) {
+    return json(res, { ok:false, error:'no accessible uploaded files to archive' }, 404);
+  }
+
+  const safeDownloadName = String(downloadName || 'Win-AirLink-files.zip')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  let archive;
+  try {
+    archive = archiver('zip', {
+      store: true,
+      forceZip64: true
+    });
+  } catch (err) {
+    console.error('Win-AirLink archiver initialization failed:', err && err.stack || err);
+    return json(res, { ok:false, error:'ZIP library could not be initialized. Run npm install archiver.' }, 500);
+  }
+
+  let clientDisconnected = false;
+  let archiveFailed = false;
+  const sourceStreams = new Set();
+
+  const stopSources = () => {
+    for (const source of sourceStreams) {
+      if (!source.destroyed) source.destroy();
+    }
+    sourceStreams.clear();
+  };
+
+  const onClientClose = () => {
+    // A normal completed response also emits "close". Only abort unfinished
+    // downloads, and treat user cancellation as expected rather than a server error.
+    if (res.writableFinished) return;
+    clientDisconnected = true;
+    archive.abort();
+    stopSources();
+  };
+
+  const onArchiveError = err => {
+    if (clientDisconnected || res.destroyed || archiveFailed) return;
+    archiveFailed = true;
+    console.error('Win-AirLink ZIP archive failed:', err && err.stack || err);
+
+    if (!res.headersSent) {
+      json(res, { ok:false, error:String(err.message || 'ZIP creation failed').slice(0,500) }, 500);
+    } else {
+      res.destroy(err);
+    }
+    stopSources();
+  };
+
+  archive.on('warning', err => {
+    // Missing/inaccessible files must fail the archive, not silently create a
+    // seemingly successful but incomplete ZIP.
+    if (err && (err.code === 'ENOENT' || err.code === 'EACCES' || err.code === 'EPERM')) {
+      onArchiveError(err);
+    } else {
+      console.warn('Win-AirLink ZIP warning:', err && err.message || err);
+    }
+  });
+  archive.on('error', onArchiveError);
+
+  res.once('close', onClientClose);
+  res.once('finish', () => {
+    res.removeListener('close', onClientClose);
+    stopSources();
+  });
+
+  // Headers are set before archive.pipe(), as required for browser downloads.
+  res.writeHead(200, {
+    'Content-Type':'application/zip',
+    'Content-Disposition':contentDisposition(safeDownloadName, true),
+    'Cache-Control':'no-store',
+    'X-Content-Type-Options':'nosniff'
+  });
+
+  archive.pipe(res);
+
+  for (const job of jobs) {
+    if (clientDisconnected || archiveFailed || res.destroyed) break;
+
+    const source = fs.createReadStream(job.source, { highWaterMark: 1024 * 1024 });
+    sourceStreams.add(source);
+    source.once('close', () => sourceStreams.delete(source));
+    source.once('error', err => {
+      if (!clientDisconnected && !archiveFailed) onArchiveError(err);
+    });
+
+    archive.append(source, {
+      name: job.name,
+      date: job.mtime || new Date(),
+      mode: 0o644
+    });
+  }
+
+  if (!clientDisconnected && !archiveFailed && !res.destroyed) {
+    try {
+      const finalized = archive.finalize();
+      if (finalized && typeof finalized.catch === 'function') finalized.catch(onArchiveError);
+    } catch (err) {
+      onArchiveError(err);
+    }
+  }
 }
 
 function streamStoredFile(req, res, file, attachment){
@@ -242,7 +566,10 @@ function loadState(){
       for (const f of arr){
         const fpath = path.isAbsolute(f.path) ? f.path : path.join(ROOT, f.path);
         if (fs.existsSync(fpath)){
-          files.set(f.id, { ...f, path: fpath, status: 'ready', received: f.size });
+          const loadedFile = { ...f, path: fpath, status: 'ready', received: f.size, audioCoverChecked:Boolean(f.audioCoverChecked) };
+          loadedFile.hasPreview = Boolean(resolveStoredPreviewPath(loadedFile));
+          files.set(f.id, loadedFile);
+          if (isAudioFile(loadedFile) && !loadedFile.hasPreview && !loadedFile.audioCoverChecked) enqueueAudioCover(loadedFile);
         }
       }
     }
@@ -260,7 +587,7 @@ function flushState(){
   try {
     const ready = Array.from(files.values())
       .filter(f => f.status === 'ready')
-      .map(f => ({ id: f.id, name: f.name, relativePath:f.relativePath||'', size: f.size, mime: f.mime, time: f.time, path: path.relative(ROOT, f.path) }));
+      .map(f => ({ id: f.id, name: f.name, relativePath:f.relativePath||'', size: f.size, mime: f.mime, time: f.time, path: path.relative(ROOT, f.path), audioCoverChecked:Boolean(f.audioCoverChecked) }));
     const tmp = FILES_FILE + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(ready, null, 2));
     fs.renameSync(tmp, FILES_FILE);
@@ -279,7 +606,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (p === '/api/disk-space' && req.method === 'GET'){
-      return json(res, getDiskSpace());
+      return json(res, await getDiskSpace());
     }
 
     if (p === '/api/info'){
@@ -386,17 +713,31 @@ const server = http.createServer(async (req, res) => {
       const fpath = path.join(fileDir, diskName);
       const mime = extensionMime || (clientMime && clientMime !== 'application/octet-stream' ? clientMime : 'application/octet-stream');
       let rawRel=''; try { rawRel=Buffer.from(String(req.headers['x-relative-path']||''),'base64').toString('utf8'); } catch(e){} rawRel=rawRel.replace(/\\/g,'/').split('/').filter(Boolean).map(safeDiskName).join('/').slice(0,700);
-      const entry = { id, name:originalName, relativePath:rawRel, diskName, size:declaredSize, mime, time:Date.now(), path:fpath, status:'uploading', received:0 };
+      const entry = { id, name:originalName, relativePath:rawRel, diskName, size:declaredSize, mime, time:Date.now(), path:fpath, status:'uploading', received:0, hasPreview:false };
       files.set(id, entry);
       const ws = fs.createWriteStream(fpath);
-      req.on('data', c => { entry.received += c.length; });
-      req.on('error', () => ws.destroy());
-      ws.on('error', () => { try { res.writeHead(500); res.end('write error'); } catch(e){} });
-      ws.on('finish', () => {
-        entry.status = 'ready'; entry.size = entry.received; saveState();
-        try { json(res, { ok:true, file:publicFile(entry) }); } catch(e){}
+      const counter = new Transform({
+        transform(chunk, encoding, callback) {
+          entry.received += chunk.length;
+          callback(null, chunk);
+        }
       });
-      return req.pipe(ws);
+      // pipeline preserves backpressure and also cleans up correctly when a client
+      // disconnects or the destination disk reports an error.
+      pipeline(req, counter, ws, err => {
+        if (err) {
+          files.delete(id);
+          fs.promises.rm(fileDir, { recursive:true, force:true }).catch(() => {});
+          if (!res.destroyed && !res.writableEnded) json(res, {ok:false,error:'upload failed'}, 500);
+          return;
+        }
+        entry.status = 'ready';
+        entry.size = entry.received;
+        saveState();
+        if (isAudioFile(entry)) enqueueAudioCover(entry);
+        if (!res.destroyed && !res.writableEnded) json(res, { ok:true, file:publicFile(entry) });
+      });
+      return;
     }
 
     if (p === '/api/folder-download' && req.method === 'GET'){
@@ -404,28 +745,62 @@ const server = http.createServer(async (req, res) => {
       if (!folderName) { res.writeHead(400); return res.end('folder required'); }
       const matches = Array.from(files.values()).filter(f => f.status === 'ready' && f.relativePath && f.relativePath.replace(/\\/g,'/').startsWith(folderName + '/'));
       if (!matches.length) { res.writeHead(404); return res.end('folder empty'); }
-      const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'win-airlink-folder-'));
-      const stage = path.join(tempRoot, 'content'); fs.mkdirSync(stage, {recursive:true});
-      try {
-        for (const f of matches) {
-          const rel = f.relativePath.replace(/\\/g,'/').split('/').map(safeDiskName);
-          const dest = path.join(stage, ...rel);
-          fs.mkdirSync(path.dirname(dest), {recursive:true});
-          fs.copyFileSync(f.path, dest);
-        }
-      } catch (e) { try{fs.rmSync(tempRoot,{recursive:true,force:true});}catch(_){} res.writeHead(500); return res.end('folder staging failed'); }
-      const zipPath = path.join(tempRoot, 'folder.zip');
-      const psQuote = value => "'" + String(value).replace(/'/g, "''") + "'";
-      const command = `Compress-Archive -Path ${psQuote(path.join(stage,'*'))} -DestinationPath ${psQuote(zipPath)} -Force`;
-      const child = spawn('powershell.exe', ['-NoProfile','-NonInteractive','-Command',command], {windowsHide:true});
-      let stderr=''; child.stderr.on('data',d=>stderr+=d.toString());
-      child.on('error',()=>{try{fs.rmSync(tempRoot,{recursive:true,force:true});}catch(_){} if(!res.headersSent){res.writeHead(501);res.end('folder archive requires Windows PowerShell');}});
-      child.on('close',code=>{
-        if (code !== 0 || !fs.existsSync(zipPath)) { try{fs.rmSync(tempRoot,{recursive:true,force:true});}catch(_){} if(!res.headersSent){res.writeHead(500);res.end('could not create folder archive');} return; }
-        res.writeHead(200, {'Content-Type':'application/zip','Content-Disposition':`attachment; filename="${(folderName.split('/').pop()||'folder').replace(/[^a-zA-Z0-9._-]/g,'_')}.zip"`});
-        const stream=fs.createReadStream(zipPath); stream.pipe(res); stream.on('close',()=>{try{fs.rmSync(tempRoot,{recursive:true,force:true});}catch(_){}}); stream.on('error',()=>{try{fs.rmSync(tempRoot,{recursive:true,force:true});}catch(_){}});
+      const entries = matches.map(file => ({ file, parts:String(file.relativePath || '').replace(/\\/g,'/').split('/').filter(Boolean) }));
+      const archiveName = (folderName.split('/').pop() || 'folder') + '.zip';
+      return streamZipResponse(req, res, entries, archiveName);
+    }
+
+    if (p === '/api/files/zip-selected' && req.method === 'POST'){
+      let payload;
+      try { payload = JSON.parse((await readBody(req, 1024 * 1024)).toString('utf8') || '{}'); }
+      catch (e) { return json(res, {ok:false,error:'invalid request body'}, 400); }
+
+      const rawIds = payload && Array.isArray(payload.selectedIds) ? payload.selectedIds : [];
+      if (!rawIds.length) return json(res, {ok:false,error:'no selected files'}, 400);
+      if (rawIds.length > 50000 || rawIds.some(id => typeof id !== 'string' || !/^[a-zA-Z0-9_-]{8,64}$/.test(id))) {
+        return json(res, {ok:false,error:'invalid selected file ids'}, 400);
+      }
+
+      const selected = new Set(rawIds);
+      if (!selected.size) return json(res, {ok:false,error:'no selected files'}, 400);
+      const matches = Array.from(files.values()).filter(f => f.status === 'ready' && selected.has(f.id));
+      if (!matches.length) return json(res,{ok:false,error:'no selected files are ready to archive'},400);
+      if (matches.length !== selected.size) return json(res,{ok:false,error:'some selected files are no longer available'},409);
+
+      const entries = matches.map(file => ({
+        file,
+        parts:String(file.relativePath || '').replace(/\\/g,'/').split('/').filter(Boolean).length
+          ? String(file.relativePath || '').replace(/\\/g,'/').split('/').filter(Boolean)
+          : [file.name || path.basename(file.path)]
+      }));
+
+      // Keep the selection on the server briefly. The browser then starts a
+      // normal attachment download instead of buffering the entire ZIP in Blob memory.
+      const now = Date.now();
+      for (const [token, item] of zipDownloadTokens) {
+        if (item.expiresAt <= now) zipDownloadTokens.delete(token);
+      }
+      const token = crypto.randomBytes(24).toString('hex');
+      zipDownloadTokens.set(token, {
+        entries,
+        filename:'Win-AirLink-selected.zip',
+        expiresAt:now + 10 * 60 * 1000
       });
-      return;
+      return json(res, {
+        ok:true,
+        downloadUrl:'/api/files/zip-selected-download/' + token,
+        fileCount:entries.length
+      });
+    }
+
+    const mZipDownload = p.match(/^\/api\/files\/zip-selected-download\/([a-f0-9]{48})$/);
+    if (mZipDownload && req.method === 'GET'){
+      const item = zipDownloadTokens.get(mZipDownload[1]);
+      if (!item || item.expiresAt <= Date.now()) {
+        zipDownloadTokens.delete(mZipDownload[1]);
+        return json(res, {ok:false,error:'ZIP download link expired. Select the files again.'}, 410);
+      }
+      return streamZipResponse(req, res, item.entries, item.filename);
     }
 
     const mFile = p.match(/^\/api\/file\/([a-z0-9_-]{8,64})$/i);
@@ -445,34 +820,54 @@ const server = http.createServer(async (req, res) => {
     }
 
     const mPreview = p.match(/^\/api\/preview\/([a-z0-9_-]{8,64})$/i);
-    if (mPreview && req.method === 'POST'){
+    if (mPreview && req.method === 'POST') {
       const f = files.get(mPreview[1]);
       if (!f || f.status !== 'ready') return json(res, {ok:false,error:'file not ready'}, 404);
-      if (path.extname(f.name).toLowerCase() !== '.gif' && f.mime !== 'image/gif') return json(res, {ok:false,error:'GIF only'}, 415);
-      let total=0, chunks=[], tooLarge=false;
-      req.on('data', chunk => { total += chunk.length; if(total > 180*1024){tooLarge=true;chunks=[];} else if(!tooLarge) chunks.push(chunk); });
-      req.on('end', () => {
-        if(tooLarge) return json(res,{ok:false,error:'preview too large'},413);
-        const b=Buffer.concat(chunks);
-        if(b.length<4 || b[0]!==0xff || b[1]!==0xd8) return json(res,{ok:false,error:'JPEG required'},415);
-        try { fs.writeFileSync(path.join(path.dirname(f.path),'preview.jpg'),b); return json(res,{ok:true}); }
-        catch(e){ return json(res,{ok:false,error:'preview save failed'},500); }
+      let total = 0;
+      const chunks = [];
+      let tooLarge = false;
+      req.on('data', chunk => {
+        total += chunk.length;
+        if (total > 320 * 1024) { tooLarge = true; chunks.length = 0; }
+        else if (!tooLarge) chunks.push(chunk);
       });
-      req.on('error',()=>{if(!res.destroyed&&!res.writableEnded)json(res,{ok:false,error:'request failed'},400);});
+      req.on('end', async () => {
+        if (tooLarge) return json(res, {ok:false,error:'thumbnail too large'}, 413);
+        const data = Buffer.concat(chunks);
+        const dimensions = getJpegDimensions(data);
+        if (!dimensions || dimensions.width < 1 || dimensions.height < 1 || dimensions.width > 256 || dimensions.height > 256) {
+          return json(res, {ok:false,error:'JPEG thumbnail must be at most 256x256'}, 415);
+        }
+        const previewPath = previewStoragePath(f);
+        const previewDir = path.dirname(previewPath);
+        const tempPath = previewPath + '.tmp';
+        try {
+          await fs.promises.mkdir(previewDir, { recursive:true });
+          await fs.promises.writeFile(tempPath, data);
+          await fs.promises.rename(tempPath, previewPath);
+          f.hasPreview = true;
+          return json(res, {ok:true, size:data.length});
+        } catch (e) {
+          try { await fs.promises.rm(tempPath, {force:true}); } catch (_) {}
+          return json(res, {ok:false,error:'preview save failed'}, 500);
+        }
+      });
+      req.on('error', () => { if (!res.destroyed && !res.writableEnded) json(res, {ok:false,error:'request failed'}, 400); });
       return;
     }
-    if (mPreview && (req.method === 'GET' || req.method === 'HEAD')){
+    if (mPreview && (req.method === 'GET' || req.method === 'HEAD')) {
       const f = files.get(mPreview[1]);
-      if (!f) { res.writeHead(404); return res.end('not found'); }
-      if (f.status !== 'ready' && f.status !== 'uploading') { res.writeHead(409); return res.end('not available'); }
-      const isGif = path.extname(f.name).toLowerCase()==='.gif' || f.mime==='image/gif';
-      const still = isGif ? path.join(path.dirname(f.path),'preview.jpg') : null;
-      if(still && fs.existsSync(still)){
-        let st; try{st=fs.statSync(still)}catch(e){}
-        if(st && st.isFile()){res.writeHead(200,{'Content-Type':'image/jpeg','Content-Length':st.size,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();return fs.createReadStream(still).pipe(res);}
-      }
-      if(isGif){res.writeHead(404);return res.end('GIF still preview pending');}
-      return streamStoredFile(req, res, f, false);
+      if (!f || f.status !== 'ready') { res.writeHead(404, {'Cache-Control':'no-store'}); return res.end('preview not available'); }
+      const previewPath = resolveStoredPreviewPath(f);
+      let stat;
+      try { if (previewPath) stat = fs.statSync(previewPath); } catch (e) {}
+      if (!previewPath || !stat || !stat.isFile()) { res.writeHead(404, {'Cache-Control':'no-store'}); return res.end('preview not generated'); }
+      res.writeHead(200, {
+        'Content-Type':'image/jpeg', 'Content-Length':stat.size,
+        'Cache-Control':'public, max-age=86400', 'X-Content-Type-Options':'nosniff'
+      });
+      if (req.method === 'HEAD') return res.end();
+      return fs.createReadStream(previewPath).pipe(res);
     }
 
     const mReveal = p.match(/^\/api\/reveal\/([a-z0-9_-]{8,64})$/i);
@@ -501,14 +896,16 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === '/' || p === '/index.html'){
-      const html = fs.readFileSync(path.join(ROOT, 'index.html'));
+      if (!INDEX_HTML) { res.writeHead(500); return res.end('index.html not found'); }
       res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' });
-      return res.end(html);
+      return res.end(INDEX_HTML);
     }
 
     res.writeHead(404); res.end('Not found');
   } catch(e){
-    res.writeHead(500); res.end('Error: ' + e.message);
+    console.error('Win-AirLink request failed:', e && e.stack || e);
+    if (!res.headersSent && !res.destroyed) { res.writeHead(500); res.end('Error: ' + e.message); }
+    else if (!res.destroyed) res.destroy(e);
   }
 });
 
@@ -531,7 +928,7 @@ function tryListen(port){
   const ips = getLocalIPs();
   console.log('');
   console.log('============================================');
-  console.log('  Win-AirLink v1.2.3 — сервер запущен');
+  console.log('  Win-AirLink v1.2 — сервер запущен');
   console.log('============================================');
   console.log('  На этом ПК:  http://localhost:' + PORT);
   if (ips.length){
@@ -541,7 +938,7 @@ function tryListen(port){
   console.log('');
   console.log('  Данные сохраняются в папке data/');
   console.log('============================================');
-  exec('start "" http://localhost:' + PORT);
+  if (process.platform === 'win32') exec('start "" http://localhost:' + PORT);
 })();
 
 process.on('SIGINT', () => {
