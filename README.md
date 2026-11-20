@@ -1,4 +1,4 @@
-# 🪟 Win-AirLink v1.1 / Coming soon... update v1.2
+# 🪟 Win-AirLink v1.2
 
 **A lightweight local file-sharing and messaging app for Windows and Android/iOS.**
 
@@ -14,8 +14,16 @@ Win-AirLink — это легковесная альтернатива AirDrop �
 
 ---
 
+v1.2
+![Скриншот интерфейса](./screenshot2.png)
+
+---
+
 v1.1
 ![Скриншот интерфейса](./screenshot1.png)
+
+---
+
 V1.0
 ![Скриншот интерфейса](./screenshot.png)
 
