@@ -142,6 +142,11 @@
     border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:15px;}
   .zip-cancel-btn:hover{border-color:var(--accent);color:var(--text);box-shadow:0 0 12px rgba(var(--accent-rgb),.18);}
   .zip-cancel-btn[hidden]{display:none;}
+  .selection-action-btn{min-height:28px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--text);font-size:11px;font-weight:650;white-space:nowrap}
+  .selection-action-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 12px rgba(var(--accent-rgb),.16)}
+  .selection-action-btn.danger{border-color:rgba(220,38,38,.55);background:rgba(185,28,28,.14);color:#ff7777}
+  .selection-action-btn.danger:hover{border-color:#ef4444;background:rgba(185,28,28,.24);color:#ffb0b0;box-shadow:0 0 12px rgba(239,68,68,.18)}
+  .selection-action-btn[hidden]{display:none!important}
 
   /* Upload heading keeps the live receive status beside its title.
      The action buttons live in a separate row below the heading divider. */
@@ -173,9 +178,10 @@
     .upload-progress-track{width:clamp(32px,8vw,54px);flex-basis:clamp(32px,8vw,54px)}
     #pctVal{font-size:11px}
     .upload-actions-row{min-height:42px;padding:5px 10px}
-    .upload-header-actions{gap:6px}
+    .upload-header-actions{gap:6px;width:100%;flex-wrap:wrap}
     .zip-except-btn{padding:0 8px;gap:5px}
-    .zip-button-label{max-width:clamp(105px,40vw,190px);font-size:11px}
+    .zip-button-label{max-width:clamp(90px,34vw,160px);font-size:11px}
+    .selection-action-btn{padding:0 7px;font-size:10px}
   }
   @media(max-width:360px){
     .upload-status-label [data-i18n="receiving"]{display:none}
@@ -264,8 +270,11 @@
   .file-thumb-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
   .file-thumb-layer img,.file-thumb-layer video{width:100%;height:100%;object-fit:cover;display:block}
   .file-thumb-layer .emoji{font-size:28px;line-height:1}
-  .file-thumb-layer .play-ov{position:absolute;right:3px;bottom:3px;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.58);color:#fff;font-size:10px;}
-  .file-thumb-layer .gif-ov{position:absolute;right:4px;bottom:4px;padding:2px 5px;border-radius:5px;background:rgba(20,28,42,.88);border:1px solid rgba(120,170,255,.55);color:#fff;font:700 10px/1.2 system-ui,sans-serif;letter-spacing:.04em;pointer-events:none;}
+  /* All media-type markers share one accent-aware badge design. */
+  .file-thumb-layer .file-type-ov{position:absolute;right:4px;bottom:4px;min-width:21px;height:19px;padding:0 5px;box-sizing:border-box;display:grid;place-items:center;border-radius:5px;background:rgba(12,18,30,.90);border:1px solid rgba(var(--accent-rgb),.76);box-shadow:0 0 9px rgba(var(--accent-rgb),.24);color:#fff;font:700 10px/1 system-ui,sans-serif;letter-spacing:.035em;pointer-events:none;text-shadow:0 0 5px rgba(var(--accent-rgb),.42)}
+  .file-thumb-layer .audio-ov{min-width:22px;height:20px;font-size:14px;letter-spacing:0}
+  .file-thumb-layer .play-ov{font-size:10px;padding:0 5px}
+  .file-thumb-layer .gif-ov{font-size:9px;letter-spacing:.04em}
   
   .file-meta{flex:1;min-width:0}
   .file-name{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -345,8 +354,11 @@
   .file-item.is-deleting::after,.msg.is-deleting::after{content:"";position:absolute;inset:-2px;z-index:8;pointer-events:none;border-radius:inherit;background:linear-gradient(105deg,transparent 0%,rgba(255,45,65,.04) 34%,rgba(255,55,75,.95) 49%,rgba(255,110,120,.7) 53%,transparent 66%);background-size:230% 100%;animation:redSweep .62s ease-out forwards}
   @keyframes redSweep{from{background-position:100% 0;opacity:0}15%{opacity:1}to{background-position:-100% 0;opacity:0}}
   @keyframes deleteSweep{0%{transform:translateX(0);opacity:1;filter:none}65%{border-color:#ff4055;box-shadow:0 0 18px rgba(255,45,65,.35)}100%{transform:translateX(14px);opacity:0;filter:brightness(1.2)}}
-  .file-select{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
-  .selection-mode .file-item{padding-left:10px}
+  .file-select{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto;cursor:pointer}
+  .selection-mode .file-item{padding-left:10px;cursor:pointer}
+  .selection-mode .file-item:hover,.selection-mode .folder-group>summary:hover{border-color:rgba(var(--accent-rgb),.58);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.10),0 0 13px rgba(var(--accent-rgb),.09)}
+  .selection-mode .file-item.is-selected{border-color:rgba(var(--accent-rgb),.68);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.16),0 0 15px rgba(var(--accent-rgb),.12)}
+  .folder-group.has-selected>summary{border-color:rgba(var(--accent-rgb),.48)}
   .folder-pick{margin-top:8px}
   .folder-group{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;margin:2px 0 8px}
   .folder-group>summary{cursor:pointer;list-style:none;padding:14px 16px;color:var(--text);font-weight:650;display:flex;align-items:center;gap:12px;min-height:76px;background:var(--panel2);border-radius:12px}
@@ -354,10 +366,12 @@
   .folder-group>summary .folder-meta{font-size:12px;color:var(--muted);font-weight:400}
   .folder-actions{display:flex;align-items:center;gap:8px;order:2}
   .folder-actions .btn-dl,.folder-actions .btn-del{width:48px;height:48px;flex-basis:48px}
-  .folder-group>summary::before{content:'⌄';font-size:22px;color:var(--text);order:3;margin-left:8px}
   .folder-group>summary::-webkit-details-marker{display:none}
-  .folder-group>summary::before{content:'›';font-size:20px;transition:transform .2s}
-  .folder-group[open]>summary::before{transform:rotate(90deg)}
+  .folder-toggle{order:3;flex:0 0 28px;width:28px;height:32px;margin-left:4px;padding:0;border:0;background:transparent;color:var(--text);font-size:23px;line-height:1;box-shadow:none;transform:rotate(0deg);transition:transform .2s ease,color .2s ease}
+  .folder-toggle:hover{background:transparent;border-color:transparent;color:var(--accent);box-shadow:none;transform:none}
+  .folder-group[open]>summary .folder-toggle{transform:rotate(90deg)}
+  .folder-select{margin:0 2px 0 0}
+  .selection-mode .folder-group>summary{cursor:pointer}
   .folder-group .file-list-inner{list-style:none;margin:0;padding:0 8px 8px;display:flex;flex-direction:column;gap:8px}
   /* Stable folder tree and full-size file cards on desktop and mobile. */
   #fileList{align-items:stretch;min-width:0}
@@ -528,7 +542,9 @@
             <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.5 2.75h8l5 5v9.5a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-13.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11.5 2.9v5h4.8M5.5 12.2l2.5 2.4 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span id="zipButtonLabel" class="zip-button-label">Выбрать для ZIP</span>
           </button>
-          <button id="cancelZipSelection" class="zip-cancel-btn" type="button" title="Отменить выбор ZIP" aria-label="Отменить выбор ZIP" hidden>✕</button>
+          <button id="selectAllZip" class="selection-action-btn" type="button" hidden>Выделить всё</button>
+          <button id="deleteSelected" class="selection-action-btn danger" type="button" hidden disabled>Удалить выбранное (0)</button>
+          <button id="cancelZipSelection" class="zip-cancel-btn" type="button" title="Отменить выбор" aria-label="Отменить выбор" hidden>✕</button>
           <button id="trashAll" class="trash-btn" type="button" data-i18n-title="delete_all_confirm" title="Удалить все файлы" disabled>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 1a.5.5 0 0 0-.5.5V2H2.5a.5.5 0 0 0 0 1h.6l.6 9.1A1.5 1.5 0 0 0 5.2 13.5h5.6a1.5 1.5 0 0 0 1.5-1.4l.6-9.1h.6a.5.5 0 0 0 0-1H11V1.5a.5.5 0 0 0-.5-.5h-5ZM6 2V2h4H6Zm-.9 2h5.8l-.5 8H5.6l-.5-8Z"/></svg>
           </button>
@@ -560,7 +576,7 @@
   </main>
 </div>
 
-<div class="app-version" aria-label="Win-AirLink version 1.2">v1.2</div>
+<div class="app-version" aria-label="Win-AirLink version 1.2.1">v1.2.1</div>
 <style>
   .app-version{position:fixed;right:12px;bottom:7px;color:var(--muted);font-size:10px;opacity:.62;
     pointer-events:none;z-index:5;letter-spacing:.02em}
@@ -665,7 +681,7 @@
       server_offline:"Сервер не отвечает. Проверьте, что окно с server.js открыто.",download_started:"Скачивание началось. Используйте список загрузок браузера.",
       browser_downloading:"Браузер скачивает файл на это устройство.",windows_only:"Проводник доступен только на Windows.",upload:"Загрузка",sent:"Отправлено",upload_failed:"Ошибка загрузки",
       zip_selected_select:"Выбрать файлы для ZIP",zip_selected_download:"Скачать выбранные",zip_selected_hint:"Отметьте файлы, которые хотите включить в ZIP.",
-      zip_selected_empty:"Отметьте хотя бы один файл для архива.",zip_selected_cancel:"Отменить выбор ZIP",
+      zip_selected_empty:"Отметьте хотя бы один файл для архива.",zip_selected_cancel:"Отменить выбор",select_all_files:"Выделить всё",clear_selection:"Снять выделение",delete_selected:"Удалить выбранное",
       zip_starting:"Собираю ZIP-архив…",zip_started:"Скачивание ZIP началось. Проверьте загрузки браузера.",zip_no_files:"Выбранные файлы больше недоступны.",
       zip_failed:"Не удалось собрать ZIP-архив.",zip_using_delete:"Для удаления завершите выбор ZIP и удерживайте кнопку корзины."
     },
@@ -679,7 +695,7 @@
       server_offline:"Server is not responding. Make sure server.js is running.",download_started:"Download started. Check your browser downloads.",
       browser_downloading:"Your browser is downloading the file to this device.",windows_only:"File Explorer is available on Windows only.",upload:"Uploading",sent:"Uploaded",upload_failed:"Upload failed",
       zip_selected_select:"Select files for ZIP",zip_selected_download:"Download selected",zip_selected_hint:"Check the files you want to include in the ZIP.",
-      zip_selected_empty:"Select at least one file for the archive.",zip_selected_cancel:"Cancel ZIP selection",
+      zip_selected_empty:"Select at least one file for the archive.",zip_selected_cancel:"Cancel selection",select_all_files:"Select all",clear_selection:"Clear selection",delete_selected:"Delete selected",
       zip_starting:"Building ZIP archive…",zip_started:"ZIP download started. Check your browser downloads.",zip_no_files:"The selected files are no longer available.",
       zip_failed:"Could not create the ZIP archive.",zip_using_delete:"Finish ZIP selection before holding the trash button for delete selection.",
       chat_copy:"Copy",chat_delete:"Delete",download:"Download",delete:"Delete",version:"Version",qr_code:"QR code"
@@ -705,6 +721,7 @@
     $('#downloadExcept').title = langPack.zip_selected_select || i18n.ru.zip_selected_select;
     $('#downloadExcept').setAttribute('aria-label', $('#downloadExcept').title);
     $('#cancelZipSelection').title = langPack.zip_selected_cancel || i18n.ru.zip_selected_cancel;
+    $('#cancelZipSelection').setAttribute('aria-label', $('#cancelZipSelection').title);
   }
 
   // Wallpaper is stored as a Blob in IndexedDB. localStorage is too small for images.
@@ -1054,6 +1071,8 @@
 
   function addMessageEl(m, animate = false){
     const el = document.createElement('div');
+    el.id = 'msg-' + m.seq;
+    el.dataset.seq = String(m.seq);
     el.className = 'msg' + (m.clientId === state.clientId ? ' mine' : '') + (animate ? ' message-enter' : '');
     const head = document.createElement('div'); head.className = 'msg-head';
     const who = document.createElement('b'); who.textContent = m.name || t('anonymous');
@@ -1074,7 +1093,7 @@
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation(); deleteBtn.disabled = true;
       try {
-        const r = await fetch('/api/messages/' + encodeURIComponent(m.seq), { method: 'DELETE' });
+        const r = await fetch('/api/messages/' + encodeURIComponent(m.seq), { method: 'DELETE', headers: { 'X-Client-Id': state.clientId } });
         if (r.ok) { animateDelete(el, async () => { state.messagesHash = ''; await pollMessages(); }); } else deleteBtn.disabled = false;
       } catch (err) { deleteBtn.disabled = false; }
     });
@@ -1085,8 +1104,11 @@
   }
 
   let pollingMsgs = false;
+  let pendingMessagesRefresh = false;
   let messagesInitialized = false;
   let renderedMessageSeqs = [];
+  const remoteDeletingMessageSeqs = new Set();
+  let remoteMessagesClearing = false;
   async function pollMessages(){
     if (pollingMsgs) return;
     pollingMsgs = true;
@@ -1096,6 +1118,9 @@
       const list = await r.json();
       const hash = JSON.stringify(list.map(m => [m.seq, m.clientId, m.name, m.text, m.time]));
       if (hash !== state.messagesHash){
+        const liveSeqs = new Set(list.map(m => m.seq));
+        const removedMessageStillAnimating = remoteMessagesClearing || Array.from(remoteDeletingMessageSeqs).some(seq => !liveSeqs.has(seq));
+        if (removedMessageStillAnimating) return;
         const chatBox = $('#messages');
         const firstRender = !messagesInitialized;
         const wasNearBottom = firstRender || (chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 140);
@@ -1122,7 +1147,19 @@
       }
       $('#clearChat').disabled = list.length === 0;
     } catch (e) {}
-    finally { pollingMsgs = false; }
+    finally {
+      pollingMsgs = false;
+      if (pendingMessagesRefresh) {
+        pendingMessagesRefresh = false;
+        queueMicrotask(() => pollMessages());
+      }
+    }
+  }
+
+  function refreshMessagesAfterRemoteDelete(){
+    state.messagesHash = '';
+    if (pollingMsgs) pendingMessagesRefresh = true;
+    else pollMessages();
   }
 
   $('#msgForm').addEventListener('submit', async (e) => {
@@ -1376,8 +1413,9 @@
       const previewUrl = '/api/preview/' + encodeURIComponent(f.id);
       queuePreviewImage(img, previewUrl);
       layer.appendChild(img);
-      if (isGif){ const tag=document.createElement('div'); tag.className='gif-ov'; tag.textContent='GIF'; layer.appendChild(tag); }
-      if (isVideo){ const play=document.createElement('div'); play.className='play-ov'; play.textContent='▶'; layer.appendChild(play); }
+      if (isGif){ const tag=document.createElement('div'); tag.className='file-type-ov gif-ov'; tag.textContent='GIF'; layer.appendChild(tag); }
+      if (isVideo){ const play=document.createElement('div'); play.className='file-type-ov play-ov'; play.textContent='▶'; layer.appendChild(play); }
+      if (isAudio){ const badge=document.createElement('div'); badge.className='file-type-ov audio-ov'; badge.textContent='♪'; badge.setAttribute('aria-label', currentLang()==='en'?'Audio file':'Аудиофайл'); layer.appendChild(badge); }
     } else fallback();
     wrap.append(layer, grey); return wrap;
   }
@@ -1401,7 +1439,10 @@
   let selectionMode = false;
   let selectionAction = '';
   const selectedFileIds = new Set();
+  const expandedFolderPaths = new Set();
   let readyZipFileCount = 0;
+  let readySelectableFileIds = new Set();
+  let lastRenderedFolderGroups = new Map();
   let trashHoldTimer = null;
   let suppressTrashClick = false;
 
@@ -1409,21 +1450,38 @@
     const button = $('#downloadExcept');
     const label = $('#zipButtonLabel');
     const cancel = $('#cancelZipSelection');
-    const active = selectionMode && selectionAction === 'zip-selected';
-    button.classList.toggle('active', active);
-    cancel.hidden = !active;
+    const selectAll = $('#selectAllZip');
+    const deleteSelected = $('#deleteSelected');
+    const zipActive = selectionMode && selectionAction === 'zip-selected';
+    const deleteActive = selectionMode && selectionAction === 'delete';
+    button.classList.toggle('active', zipActive);
+    cancel.hidden = !selectionMode;
+    selectAll.hidden = !zipActive;
+    deleteSelected.hidden = !deleteActive;
+    $('#trashAll').classList.toggle('selecting', deleteActive);
 
-    if (active){
+    if (zipActive){
       const count = selectedFileIds.size;
       label.textContent = `${t('zip_selected_download')} (${count})`;
       button.disabled = count === 0;
       button.title = count ? `${t('zip_selected_download')} (${count})` : t('zip_selected_empty');
       button.setAttribute('aria-label', button.title);
+      const allSelected = readySelectableFileIds.size > 0 && Array.from(readySelectableFileIds).every(id => selectedFileIds.has(id));
+      selectAll.textContent = allSelected ? t('clear_selection') : t('select_all_files');
+      selectAll.disabled = readySelectableFileIds.size === 0;
+      selectAll.title = selectAll.textContent;
     } else {
       label.textContent = t('zip_selected_select');
       button.disabled = readyZipFileCount === 0;
       button.title = t('zip_selected_select');
       button.setAttribute('aria-label', button.title);
+    }
+
+    if (deleteActive){
+      const count = selectedFileIds.size;
+      deleteSelected.textContent = `${t('delete_selected')} (${count})`;
+      deleteSelected.disabled = count === 0;
+      deleteSelected.title = deleteSelected.textContent;
     }
     cancel.title = t('zip_selected_cancel');
     cancel.setAttribute('aria-label', t('zip_selected_cancel'));
@@ -1434,10 +1492,97 @@
     selectionAction = selectionMode ? action : '';
     selectedFileIds.clear();
     $('#fileList').classList.toggle('selection-mode', selectionMode);
-    $('#trashAll').classList.toggle('selecting', selectionMode && selectionAction === 'delete');
     updateZipButtonState();
     state.filesHash='';
     pollFiles();
+  }
+
+  function syncFolderSelectionCheckboxes(folderGroups){
+    for (const group of folderGroups.values()) {
+      const checkbox = group.checkbox;
+      if (!checkbox) continue;
+      const readyFiles = group.files.filter(file => file.status === 'ready');
+      const selectedCount = readyFiles.reduce((count, file) => count + (selectedFileIds.has(file.id) ? 1 : 0), 0);
+      checkbox.checked = readyFiles.length > 0 && selectedCount === readyFiles.length;
+      checkbox.indeterminate = selectedCount > 0 && selectedCount < readyFiles.length;
+      checkbox.disabled = readyFiles.length === 0;
+      group.details.classList.toggle('has-selected', selectedCount > 0);
+      group.details.classList.toggle('all-selected', readyFiles.length > 0 && selectedCount === readyFiles.length);
+      checkbox.setAttribute('aria-label', currentLang() === 'en'
+        ? `Select all ${readyFiles.length} files in folder`
+        : `Выбрать все файлы в папке (${readyFiles.length})`);
+    }
+  }
+
+  function syncFileSelectionCheckboxes(root){
+    root.querySelectorAll('.file-item').forEach(card => {
+      const checkbox = card.querySelector('.file-select:not(.folder-select)');
+      const id = card.dataset.fileId || card.id.replace(/^file-/, '');
+      const selected = selectedFileIds.has(id);
+      card.classList.toggle('is-selected', selected);
+      if (checkbox) checkbox.checked = selected;
+      if (card.getAttribute('role') === 'checkbox') card.setAttribute('aria-checked', String(selected));
+    });
+  }
+
+  function setFileSelected(fileId, checked, folderGroups = lastRenderedFolderGroups){
+    if (checked) selectedFileIds.add(fileId);
+    else selectedFileIds.delete(fileId);
+    const card = document.getElementById('file-' + fileId);
+    if (card){
+      card.classList.toggle('is-selected', checked);
+      card.setAttribute('aria-checked', String(checked));
+      const checkbox = card.querySelector('.file-select:not(.folder-select)');
+      if (checkbox) checkbox.checked = checked;
+    }
+    syncFolderSelectionCheckboxes(folderGroups);
+    updateZipButtonState();
+  }
+
+  function toggleFolderSelection(group, folderGroups, root){
+    const readyFiles = group.files.filter(file => file.status === 'ready');
+    if (!readyFiles.length) return;
+    const allSelected = readyFiles.every(file => selectedFileIds.has(file.id));
+    for (const file of readyFiles) {
+      if (allSelected) selectedFileIds.delete(file.id);
+      else selectedFileIds.add(file.id);
+    }
+    syncFileSelectionCheckboxes(root);
+    syncFolderSelectionCheckboxes(folderGroups);
+    updateZipButtonState();
+  }
+
+  function toggleAllReadySelection(){
+    if (!selectionMode || selectionAction !== 'zip-selected') return;
+    const allSelected = readySelectableFileIds.size > 0 && Array.from(readySelectableFileIds).every(id => selectedFileIds.has(id));
+    for (const id of readySelectableFileIds){
+      if (allSelected) selectedFileIds.delete(id);
+      else selectedFileIds.add(id);
+    }
+    const root = $('#fileList');
+    syncFileSelectionCheckboxes(root);
+    syncFolderSelectionCheckboxes(lastRenderedFolderGroups);
+    updateZipButtonState();
+  }
+
+  async function deleteSelectedFiles(){
+    if (!selectionMode || selectionAction !== 'delete') return;
+    if (!selectedFileIds.size){ setSelectionMode(false); return; }
+    if (!confirm(currentLang()==='en'
+      ? `Delete ${selectedFileIds.size} selected files?`
+      : `Удалить выбранные файлы (${selectedFileIds.size})?`)) return;
+    const ids = Array.from(selectedFileIds);
+    playSound('delete');
+    ids.forEach(id => document.getElementById('file-'+id)?.classList.add('is-deleting'));
+    const startedAt = Date.now();
+    await Promise.all(ids.map(id => fetch('/api/file/'+encodeURIComponent(id), {
+      method:'DELETE', headers:{'X-Client-Id':state.clientId}
+    }).catch(() => null)));
+    setTimeout(() => {
+      setSelectionMode(false);
+      state.filesHash='';
+      pollFiles();
+    }, Math.max(0, 660 - (Date.now() - startedAt)));
   }
 
   async function downloadFilesSelected(){
@@ -1492,6 +1637,9 @@
   let filesInitialized = false;
   const displayedProgress = new Map();
   const completionGlowTimers = new Map();
+  const pendingRemoteCompletionIds = new Set();
+  let pendingFilesRefresh = false;
+  let liveEventsSource = null;
   async function downloadFolder(folderName){
     const url='/api/folder-download?folder='+encodeURIComponent(folderName);
     const a=document.createElement('a'); a.href=url; a.download=(folderName.split('/').pop()||'folder')+'.zip'; document.body.appendChild(a); a.click(); a.remove();
@@ -1505,9 +1653,9 @@
       if(!confirm(currentLang()==='en'?`Delete folder "${folderName}" and ${ids.length} files?`:`Удалить папку «${folderName}» и файлов: ${ids.length}?`))return;
       playSound('delete');
       const group=[...document.querySelectorAll('.folder-group')].find(el=>el.querySelector('.folder-title')?.textContent==='📁 '+folderName);
-      if(group)group.classList.add('is-deleting');
-      await Promise.all(ids.map(id=>fetch('/api/file/'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>null)));
-      state.filesHash=''; pollFiles();
+      if(group)group.querySelectorAll('.file-item').forEach(card=>card.classList.add('is-deleting'));
+      await Promise.all(ids.map(id=>fetch('/api/file/'+encodeURIComponent(id),{method:'DELETE',headers:{'X-Client-Id':state.clientId}}).catch(()=>null)));
+      setTimeout(()=>{state.filesHash='';pollFiles();},660);
     } catch(e){ setBanner(currentLang()==='en'?'Could not delete folder':'Не удалось удалить папку'); }
   }
 
@@ -1525,7 +1673,9 @@
       // after it is already ready. Treat newly appeared ready files as completed too.
       const newlyReceivedReadyFile = filesInitialized && !prev && f.status === 'ready';
       const uploadJustCompleted = f.status === 'ready' && prev && prev.status === 'uploading';
-      if (newlyReceivedReadyFile || uploadJustCompleted) {
+      const confirmedByLiveEvent = f.status === 'ready' && pendingRemoteCompletionIds.has(f.id);
+      if (confirmedByLiveEvent) pendingRemoteCompletionIds.delete(f.id);
+      if (newlyReceivedReadyFile || uploadJustCompleted || confirmedByLiveEvent) {
         completedFiles.add(f.id);
         completionGlowTimers.set(f.id, Date.now() + 2700);
         setTimeout(() => {
@@ -1541,6 +1691,7 @@
     $('#trashAll').disabled = count === 0;
     const readyIds = new Set(list.filter(f => f.status === 'ready').map(f => f.id));
     readyZipFileCount = readyIds.size;
+    readySelectableFileIds = new Set(readyIds);
     for (const id of selectedFileIds) if (!readyIds.has(id)) selectedFileIds.delete(id);
     updateZipButtonState();
 
@@ -1550,7 +1701,7 @@
       const li = document.createElement('li'); li.className = 'empty'; li.textContent = t('empty_uploads'); ul.appendChild(li); 
     } else {
       for (const f of list.slice().reverse()){
-        const li = document.createElement('li'); li.className = 'file-item'; li.id = 'file-' + f.id;
+        const li = document.createElement('li'); li.className = 'file-item'; li.id = 'file-' + f.id; li.dataset.fileId = f.id;
         let targetList = ul;
         if (f.relativePath) {
           const parts = f.relativePath.replace(/\\/g,'/').split('/').filter(Boolean);
@@ -1564,7 +1715,27 @@
               if (!group) {
                 const actionFolderPath = folderPath;
                 const details=document.createElement('details'); details.className='folder-group';
+                details.dataset.folderPath = actionFolderPath;
+                details.open = expandedFolderPaths.has(actionFolderPath);
                 const summary=document.createElement('summary');
+                const groupState = {details,inner:null,meta:null,files:[],checkbox:null};
+                if (selectionMode) {
+                  const folderCheckbox=document.createElement('input');
+                  folderCheckbox.type='checkbox'; folderCheckbox.className='file-select folder-select';
+                  folderCheckbox.addEventListener('click', event => event.stopPropagation());
+                  folderCheckbox.addEventListener('change', () => {
+                    const readyFiles = groupState.files.filter(file => file.status === 'ready');
+                    for (const file of readyFiles) {
+                      if (folderCheckbox.checked) selectedFileIds.add(file.id);
+                      else selectedFileIds.delete(file.id);
+                    }
+                    syncFileSelectionCheckboxes(ul);
+                    syncFolderSelectionCheckboxes(folderGroups);
+                    updateZipButtonState();
+                  });
+                  groupState.checkbox = folderCheckbox;
+                  summary.appendChild(folderCheckbox);
+                }
                 const title=document.createElement('span'); title.className='folder-title'; title.textContent='📁 '+part;
                 const meta=document.createElement('span'); meta.className='folder-meta';
                 const actions=document.createElement('span'); actions.className='folder-actions';
@@ -1572,10 +1743,32 @@
                 dlFolder.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();downloadFolder(actionFolderPath);});
                 const delFolder=document.createElement('button'); delFolder.type='button'; delFolder.className='btn-del folder-delete'; delFolder.textContent='✕'; delFolder.title=currentLang()==='en'?'Delete folder':'Удалить папку';
                 delFolder.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteFolder(actionFolderPath);});
-                actions.append(dlFolder,delFolder); summary.append(title,meta,actions);
+                actions.append(dlFolder,delFolder);
+                const folderToggle=document.createElement('button'); folderToggle.type='button'; folderToggle.className='folder-toggle';
+                folderToggle.textContent='›'; folderToggle.title=currentLang()==='en'?'Expand or collapse folder':'Раскрыть или свернуть папку';
+                folderToggle.setAttribute('aria-expanded', String(details.open));
+                folderToggle.addEventListener('click', e => {
+                  e.preventDefault(); e.stopPropagation();
+                  details.open = !details.open;
+                  if (details.open) expandedFolderPaths.add(actionFolderPath);
+                  else expandedFolderPaths.delete(actionFolderPath);
+                  folderToggle.setAttribute('aria-expanded', String(details.open));
+                });
+                summary.append(title,meta,actions,folderToggle);
+                summary.addEventListener('click', event => {
+                  if (!selectionMode || event.target.closest('.folder-actions,.folder-toggle,.folder-select')) return;
+                  event.preventDefault();
+                  toggleFolderSelection(groupState, folderGroups, ul);
+                });
+                details.addEventListener('toggle', () => {
+                  if (details.open) expandedFolderPaths.add(actionFolderPath);
+                  else expandedFolderPaths.delete(actionFolderPath);
+                  folderToggle.setAttribute('aria-expanded', String(details.open));
+                });
                 const inner=document.createElement('ul'); inner.className='file-list-inner';
+                groupState.inner=inner; groupState.meta=meta;
                 details.append(summary,inner); parentList.appendChild(details);
-                group={details,inner,meta,files:[]}; folderGroups.set(folderPath,group);
+                group=groupState; folderGroups.set(folderPath,group);
               }
               group.files.push(f); parentList=group.inner;
             }
@@ -1584,13 +1777,27 @@
         }
         if (completionGlowTimers.has(f.id) && completionGlowTimers.get(f.id) > Date.now()) li.classList.add('just-ready');
         if (selectionMode && f.status === 'ready') {
-          const cb=document.createElement('input'); cb.type='checkbox'; cb.className='file-select';
-          cb.checked=selectedFileIds.has(f.id);
-          cb.setAttribute('aria-label', currentLang()==='en' ? `Include ${f.name} in ZIP` : `Включить ${f.name} в ZIP`);
-          cb.addEventListener('change',()=>{
-            if(cb.checked) selectedFileIds.add(f.id); else selectedFileIds.delete(f.id);
-            updateZipButtonState();
+          const selected = selectedFileIds.has(f.id);
+          li.classList.toggle('is-selected', selected);
+          li.tabIndex = 0;
+          li.setAttribute('role','checkbox');
+          li.setAttribute('aria-checked', String(selected));
+          li.addEventListener('click', event => {
+            if (!selectionMode || event.target.closest('button,a,input,select,textarea,[role="button"]')) return;
+            setFileSelected(f.id, !selectedFileIds.has(f.id), folderGroups);
           });
+          li.addEventListener('keydown', event => {
+            if (event.target !== li || (event.key !== 'Enter' && event.key !== ' ')) return;
+            event.preventDefault();
+            setFileSelected(f.id, !selectedFileIds.has(f.id), folderGroups);
+          });
+          const cb=document.createElement('input'); cb.type='checkbox'; cb.className='file-select';
+          cb.checked=selected;
+          cb.setAttribute('aria-label', selectionAction === 'delete'
+            ? (currentLang()==='en' ? `Select ${f.name} for deletion` : `Выбрать ${f.name} для удаления`)
+            : (currentLang()==='en' ? `Include ${f.name} in ZIP` : `Включить ${f.name} в ZIP`));
+          cb.addEventListener('click', event => event.stopPropagation());
+          cb.addEventListener('change',()=>setFileSelected(f.id, cb.checked, folderGroups));
           li.appendChild(cb);
         }
 
@@ -1617,7 +1824,10 @@
 
         const meta = document.createElement('div'); meta.className = 'file-meta';
         const nameEl = document.createElement('span'); nameEl.className = 'file-name link'; nameEl.textContent = f.name;
-        nameEl.addEventListener('click', () => revealFile(f.id, f.name));
+        nameEl.addEventListener('click', event => {
+          if (selectionMode && f.status === 'ready') { event.preventDefault(); return; }
+          revealFile(f.id, f.name);
+        });
         const sub = document.createElement('div'); sub.className = 'file-sub'; sub.textContent = (f.relativePath ? f.relativePath + ' • ' : '') + fmtSize(f.size) + ' • ' + fmtTime(f.time);
         meta.append(nameEl, sub); li.appendChild(meta);
 
@@ -1630,7 +1840,13 @@
           const del = document.createElement('button'); del.className = 'btn-del'; del.type = 'button'; del.title = currentLang()==='en' ? 'Delete' : 'Удалить'; del.textContent = '✕';
           del.addEventListener('click', async () => {
             if (!confirm(t('delete_file_confirm',{name:f.name}))) return;
-            animateDelete(li, async () => { try { await fetch('/api/file/' + encodeURIComponent(f.id), { method: 'DELETE' }); } catch (e) {} state.filesHash = ''; pollFiles(); });
+            playSound('delete');
+            li.classList.add('is-deleting');
+            try {
+              const response = await fetch('/api/file/' + encodeURIComponent(f.id), { method: 'DELETE', headers: { 'X-Client-Id': state.clientId } });
+              if (!response.ok) { li.classList.remove('is-deleting'); return; }
+              setTimeout(() => { state.filesHash = ''; pollFiles(); }, 660);
+            } catch (e) { li.classList.remove('is-deleting'); }
           });
           li.appendChild(del);
         }
@@ -1642,6 +1858,12 @@
       const totalBytes=group.files.reduce((sum,f)=>sum+(Number(f.size)||0),0);
       group.meta.textContent=`${group.files.length} ${currentLang()==='en'?'files':'файлов'} · ${fmtSize(totalBytes)}`;
     }
+    for (const folderPath of expandedFolderPaths) {
+      if (!folderGroups.has(folderPath)) expandedFolderPaths.delete(folderPath);
+    }
+    lastRenderedFolderGroups = folderGroups;
+    syncFileSelectionCheckboxes(ul);
+    syncFolderSelectionCheckboxes(folderGroups);
 
     if (completedFiles.size > 0) playSound('file-complete');
     for (const f of list) state.knownFiles.set(f.id, f);
@@ -1699,6 +1921,11 @@
       // received changes frequently during uploads. Keep those updates out of the full DOM render.
       const hash = JSON.stringify(list.map(f => [f.id,f.name,f.size,f.status,f.relativePath,f.mime,f.hasPreview]));
       if (hash !== state.filesHash) {
+        if (remoteDeletingFileIds.size) {
+          updateUploadProgress(list);
+          filesInitialized = true;
+          return;
+        }
         state.filesHash = hash;
         renderFiles(list);
       }
@@ -1707,7 +1934,113 @@
     } catch (e) {
     } finally {
       filesPolling = false;
+      if (pendingFilesRefresh) {
+        pendingFilesRefresh = false;
+        queueMicrotask(() => pollFiles());
+      }
     }
+  }
+
+  function requestFilesRefreshFromLiveEvent(){
+    state.filesHash = '';
+    if (filesPolling) pendingFilesRefresh = true;
+    else pollFiles();
+  }
+
+  const remoteDeletingFileIds = new Set();
+  function animateRemoteFileDeletion(id){
+    const card = document.getElementById('file-' + id);
+    if (!card || remoteDeletingFileIds.has(id)) return false;
+    remoteDeletingFileIds.add(id);
+    card.classList.add('is-deleting');
+    return true;
+  }
+  function finishRemoteFileDeletions(ids){
+    setTimeout(() => {
+      for (const id of ids) remoteDeletingFileIds.delete(id);
+      refreshFilesAfterRemoteDelete();
+    }, 680);
+  }
+  function handleRemoteFileDeleted(id){
+    if (typeof id !== 'string' || !id) return;
+    if (animateRemoteFileDeletion(id)) playSound('delete');
+    finishRemoteFileDeletions([id]);
+  }
+  function handleRemoteFilesDeleted(ids){
+    const animated = [];
+    for (const id of Array.isArray(ids) ? ids : []) {
+      if (typeof id === 'string' && animateRemoteFileDeletion(id)) animated.push(id);
+    }
+    if (animated.length) playSound('delete');
+    if (animated.length) finishRemoteFileDeletions(animated);
+    else refreshFilesAfterRemoteDelete();
+  }
+  function refreshFilesAfterRemoteDelete(){
+    state.filesHash = '';
+    if (filesPolling) pendingFilesRefresh = true;
+    else pollFiles();
+  }
+  function handleRemoteMessageDeleted(seq){
+    const messageSeq = Number(seq);
+    if (!Number.isSafeInteger(messageSeq) || messageSeq <= 0 || remoteDeletingMessageSeqs.has(messageSeq)) return;
+    const card = document.getElementById('msg-' + messageSeq);
+    if (!card) { refreshMessagesAfterRemoteDelete(); return; }
+    remoteDeletingMessageSeqs.add(messageSeq);
+    card.classList.add('is-deleting');
+    playSound('delete');
+    setTimeout(() => {
+      remoteDeletingMessageSeqs.delete(messageSeq);
+      refreshMessagesAfterRemoteDelete();
+    }, 680);
+  }
+  function handleRemoteMessagesCleared(seqs){
+    remoteMessagesClearing = true;
+    const knownSeqs = Array.isArray(seqs) ? seqs.map(Number).filter(n => Number.isSafeInteger(n) && n > 0) : [];
+    for (const seq of knownSeqs) remoteDeletingMessageSeqs.add(seq);
+    const cards = Array.from(document.querySelectorAll('#messages .msg'));
+    for (const card of cards) {
+      const seq = Number(card.dataset.seq);
+      if (Number.isSafeInteger(seq) && seq > 0) remoteDeletingMessageSeqs.add(seq);
+      card.classList.add('is-deleting');
+    }
+    if (cards.length) playSound('delete');
+    setTimeout(() => {
+      remoteDeletingMessageSeqs.clear();
+      remoteMessagesClearing = false;
+      refreshMessagesAfterRemoteDelete();
+    }, 680);
+  }
+
+  function connectLiveEvents(){
+    if (!('EventSource' in window)) return;
+    if (liveEventsSource) liveEventsSource.close();
+    liveEventsSource = new EventSource('/api/events?' + qs());
+    liveEventsSource.addEventListener('file-received', event => {
+      let payload;
+      try { payload = JSON.parse(event.data || '{}'); } catch (err) { return; }
+      const file = payload.file;
+      if (!file || !file.id || file.status !== 'ready') return;
+      if (payload.senderId && payload.senderId === state.clientId) return;
+      pendingRemoteCompletionIds.add(file.id);
+      requestFilesRefreshFromLiveEvent();
+    });
+    const isOtherClientEvent = payload => !payload.clientId || payload.clientId !== state.clientId;
+    liveEventsSource.addEventListener('file-deleted', event => {
+      let payload; try { payload = JSON.parse(event.data || '{}'); } catch (err) { return; }
+      if (isOtherClientEvent(payload)) handleRemoteFileDeleted(payload.id);
+    });
+    liveEventsSource.addEventListener('files-deleted', event => {
+      let payload; try { payload = JSON.parse(event.data || '{}'); } catch (err) { return; }
+      if (isOtherClientEvent(payload)) handleRemoteFilesDeleted(payload.ids);
+    });
+    liveEventsSource.addEventListener('message-deleted', event => {
+      let payload; try { payload = JSON.parse(event.data || '{}'); } catch (err) { return; }
+      if (isOtherClientEvent(payload)) handleRemoteMessageDeleted(payload.seq);
+    });
+    liveEventsSource.addEventListener('messages-cleared', event => {
+      let payload; try { payload = JSON.parse(event.data || '{}'); } catch (err) { return; }
+      if (isOtherClientEvent(payload)) handleRemoteMessagesCleared(payload.seqs);
+    });
   }
 
   const queue = [];
@@ -1722,6 +2055,7 @@
         xhr.setRequestHeader('X-File-Name-B64', btoa(unescape(encodeURIComponent(file.name))));
         xhr.setRequestHeader('X-File-Type', file.type || '');
         xhr.setRequestHeader('X-File-Id', fileId);
+        xhr.setRequestHeader('X-Client-Id', state.clientId);
         if (file.webkitRelativePath) xhr.setRequestHeader('X-Relative-Path', btoa(unescape(encodeURIComponent(file.webkitRelativePath))));
         xhr.setRequestHeader('Content-Type', 'application/octet-stream');
         let lastProgressPoll = 0;
@@ -1844,7 +2178,11 @@
       if (!confirm(t('clear_chat_confirm'))) return;
       playSound('delete');
       document.querySelectorAll('#messages .msg').forEach(el => el.classList.add('is-deleting'));
-      setTimeout(async () => { try { await fetch('/api/messages', { method: 'DELETE' }); state.messagesHash = ''; await pollMessages(); } catch (e) {} }, 620);
+      try {
+        const response = await fetch('/api/messages', { method: 'DELETE', headers: { 'X-Client-Id': state.clientId } });
+        if (response.ok) setTimeout(() => { state.messagesHash = ''; pollMessages(); }, 660);
+        else document.querySelectorAll('#messages .msg').forEach(el => el.classList.remove('is-deleting'));
+      } catch (e) { document.querySelectorAll('#messages .msg').forEach(el => el.classList.remove('is-deleting')); }
     });
 
     const downloadExcept = $('#downloadExcept');
@@ -1857,6 +2195,8 @@
       await downloadFilesSelected();
     });
     $('#cancelZipSelection').addEventListener('click', () => setSelectionMode(false));
+    $('#selectAllZip').addEventListener('click', toggleAllReadySelection);
+    $('#deleteSelected').addEventListener('click', deleteSelectedFiles);
 
     const trash = $('#trashAll');
     trash.addEventListener('pointerdown', () => {
@@ -1873,23 +2213,20 @@
         setTimeout(() => setBanner(''), 5000);
         return;
       }
-      if (selectionMode && selectionAction === 'delete') {
-        if (!selectedFileIds.size) { setSelectionMode(false); return; }
-        if (!confirm(currentLang()==='en' ? `Delete ${selectedFileIds.size} selected files?` : `Удалить выбранные файлы (${selectedFileIds.size})?`)) return;
-        const ids = Array.from(selectedFileIds);
-        playSound('delete');
-        ids.forEach(id => document.getElementById('file-'+id)?.classList.add('is-deleting'));
-        setTimeout(async () => { await Promise.all(ids.map(id=>fetch('/api/file/'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>null))); setSelectionMode(false); state.filesHash=''; pollFiles(); },620);
-        return;
-      }
+      if (selectionMode && selectionAction === 'delete') { await deleteSelectedFiles(); return; }
       if (!confirm(t('delete_all_confirm'))) return;
       playSound('delete');
       document.querySelectorAll('#fileList .file-item').forEach(el => el.classList.add('is-deleting'));
-      setTimeout(async () => { try { await fetch('/api/files/all', { method: 'DELETE' }); state.filesHash = ''; pollFiles(); } catch (e) {} }, 620);
+      try {
+        const response = await fetch('/api/files/all', { method: 'DELETE', headers: { 'X-Client-Id': state.clientId } });
+        if (response.ok) setTimeout(() => { state.filesHash = ''; pollFiles(); }, 660);
+        else document.querySelectorAll('#fileList .file-item').forEach(el => el.classList.remove('is-deleting'));
+      } catch (e) { document.querySelectorAll('#fileList .file-item').forEach(el => el.classList.remove('is-deleting')); }
     });
 
     await refreshInfo(); await pollClients(); await updateDiskSpace();
     await pollMessages(); await pollFiles();
+    connectLiveEvents();
 
     const pollTimers = Object.create(null);
     function stopPollingLoops(){
@@ -1915,8 +2252,16 @@
       schedulePoll('files', pollFiles, immediate ? first : (() => activeUploadsCount ? 1100 : 4500));
     }
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) stopPollingLoops();
-      else startPollingLoops(true);
+      if (document.hidden) {
+        stopPollingLoops();
+        if (liveEventsSource) { liveEventsSource.close(); liveEventsSource = null; }
+      } else {
+        connectLiveEvents();
+        startPollingLoops(true);
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      if (liveEventsSource) { liveEventsSource.close(); liveEventsSource = null; }
     });
     startPollingLoops(false);
   })();

@@ -41,6 +41,30 @@ let seq = 0;
 const files = new Map(); 
 const clients = new Map();
 const zipDownloadTokens = new Map();
+const eventStreams = new Set();
+
+function cleanupEventStream(stream) {
+  if (!stream) return;
+  clearInterval(stream.heartbeat);
+  eventStreams.delete(stream);
+}
+
+function broadcastSse(eventName, payload) {
+  const message = `event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`;
+  for (const stream of eventStreams) {
+    const res = stream.res;
+    if (res.destroyed || res.writableEnded) {
+      clearInterval(stream.heartbeat);
+      eventStreams.delete(stream);
+      continue;
+    }
+    try { res.write(message); }
+    catch (err) {
+      clearInterval(stream.heartbeat);
+      eventStreams.delete(stream);
+    }
+  }
+}
 
 async function getDiskSpace() {
   try {
@@ -609,6 +633,29 @@ const server = http.createServer(async (req, res) => {
       return json(res, await getDiskSpace());
     }
 
+    if (p === '/api/events' && req.method === 'GET'){
+      const eventClientId = String(q.get('clientId') || '').slice(0,64);
+      const eventClientName = String(q.get('name') || '').slice(0,24);
+      touchClient(eventClientId, eventClientName, ip);
+      res.writeHead(200, {
+        'Content-Type':'text/event-stream; charset=utf-8',
+        'Cache-Control':'no-cache, no-transform',
+        'Connection':'keep-alive',
+        'X-Accel-Buffering':'no'
+      });
+      res.write(': Win-AirLink live events connected\n\n');
+      const stream = { id:eventClientId, res, heartbeat:null };
+      stream.heartbeat = setInterval(() => {
+        if (!res.destroyed && !res.writableEnded) {
+          try { res.write(': ping\n\n'); } catch (err) { cleanupEventStream(stream); }
+        } else cleanupEventStream(stream);
+      }, 25000);
+      if (typeof stream.heartbeat.unref === 'function') stream.heartbeat.unref();
+      eventStreams.add(stream);
+      res.once('close', () => cleanupEventStream(stream));
+      return;
+    }
+
     if (p === '/api/info'){
       touchClient(q.get('clientId') || '', q.get('name') || '', ip);
       const ips = getLocalIPs();
@@ -647,9 +694,11 @@ const server = http.createServer(async (req, res) => {
       return json(res, messages);
     }
     if (p === '/api/messages' && req.method === 'DELETE'){
+      const removedSeqs = messages.map(message => message.seq);
       const removed = messages.length;
       messages.length = 0;
       saveState();
+      broadcastSse('messages-cleared', { seqs:removedSeqs, clientId:String(req.headers['x-client-id'] || q.get('clientId') || '').slice(0,64), removedAt:Date.now() });
       return json(res, { ok:true, removed });
     }
     const mMessage = p.match(/^\/api\/messages\/(\d+)$/);
@@ -659,6 +708,7 @@ const server = http.createServer(async (req, res) => {
       if (index < 0) return json(res, { ok:false, error:'not found' }, 404);
       messages.splice(index, 1);
       saveState();
+      broadcastSse('message-deleted', { seq:messageSeq, clientId:String(req.headers['x-client-id'] || q.get('clientId') || '').slice(0,64), removedAt:Date.now() });
       return json(res, { ok:true });
     }
     if (p === '/api/messages' && req.method === 'POST'){
@@ -680,12 +730,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === '/api/files/all' && req.method === 'DELETE'){
+      const removedIds = Array.from(files.keys());
       let removed = 0;
       for (const [, f] of files){
         try { if (fs.existsSync(f.path)) removeStoredFile(f.path); removed++; } catch(e){}
       }
       files.clear();
       saveState();
+      broadcastSse('files-deleted', { ids:removedIds, clientId:String(req.headers['x-client-id'] || q.get('clientId') || '').slice(0,64), removedAt:Date.now() });
       return json(res, { ok:true, removed });
     }
 
@@ -704,6 +756,7 @@ const server = http.createServer(async (req, res) => {
       const originalName = cleanDisplayName(rawName);
       const diskName = safeDiskName(originalName);
       const clientMime = String(req.headers['x-file-type'] || '').slice(0,200).split(';')[0].trim().toLowerCase();
+      const senderClientId = String(req.headers['x-client-id'] || '').slice(0,64);
       const extensionMime = getMimeByName(originalName);
       const declaredSize = Number(req.headers['content-length'] || 0);
       let id = String(req.headers['x-file-id'] || '').trim();
@@ -735,6 +788,10 @@ const server = http.createServer(async (req, res) => {
         entry.size = entry.received;
         saveState();
         if (isAudioFile(entry)) enqueueAudioCover(entry);
+        // Notify every connected browser only after the destination stream has
+        // finished and the file is marked ready. The sender ID lets its own
+        // browser ignore the event while all receiving clients animate at once.
+        broadcastSse('file-received', { file:publicFile(entry), senderId:senderClientId, receivedAt:Date.now() });
         if (!res.destroyed && !res.writableEnded) json(res, { ok:true, file:publicFile(entry) });
       });
       return;
@@ -811,6 +868,7 @@ const server = http.createServer(async (req, res) => {
         files.delete(f.id);
         removeStoredFile(f.path);
         saveState();
+        broadcastSse('file-deleted', { id:f.id, clientId:String(req.headers['x-client-id'] || q.get('clientId') || '').slice(0,64), removedAt:Date.now() });
         return json(res, { ok:true });
       }
       if (req.method === 'GET' || req.method === 'HEAD'){
@@ -928,7 +986,7 @@ function tryListen(port){
   const ips = getLocalIPs();
   console.log('');
   console.log('============================================');
-  console.log('  Win-AirLink v1.2 — сервер запущен');
+  console.log('  Win-AirLink v1.2.1 — сервер запущен');
   console.log('============================================');
   console.log('  На этом ПК:  http://localhost:' + PORT);
   if (ips.length){
