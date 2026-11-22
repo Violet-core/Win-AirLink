@@ -1,4 +1,4 @@
-# 🪟 Win-AirLink v1.2
+# 🪟 Win-AirLink v1.2.1
 
 **A lightweight local file-sharing and messaging app for Windows and Android/iOS.**
 
