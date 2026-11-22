@@ -28,16 +28,22 @@
   /* --- ЭФФЕКТ ПУЧКА СВЕТА (SPOTLIGHT) --- */
   .glow-target {
     position: relative;
-    overflow: hidden; 
+    overflow: hidden;
   }
+  /* The pseudo-element sits inside the 1px element border, so its outer
+     corner radius must be the padding-box radius, not the border-box radius. */
+  header.glow-target,
+  .panel.glow-target { --glow-inner-radius: 13px; }
+  .devices.glow-target { --glow-inner-radius: 998px; }
+  .disk-space.glow-target { --glow-inner-radius: 49px; }
   .glow-target::before {
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: inherit;
-    padding: 1.5px;
+    border-radius: var(--glow-inner-radius, inherit);
+    padding: 1px;
     background: radial-gradient(
-      190px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
+      235px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
       rgba(var(--accent-rgb), .98) 0%,
       rgba(var(--accent-rgb), .58) 24%,
       rgba(var(--accent-rgb), .12) 48%,
@@ -52,7 +58,7 @@
     z-index: 10;
   }
   .glow-target.is-lit::before { opacity: 1; }
-  .glow-target.is-lit { border-color: rgba(var(--accent-rgb),.58); box-shadow:0 0 0 1px rgba(var(--accent-rgb),.13),0 0 18px rgba(var(--accent-rgb),.12); }
+  .glow-target.is-lit { border-color: rgba(var(--accent-rgb),.58); box-shadow:0 0 18px rgba(var(--accent-rgb),.14); }
 
   /* Базовые переходы */
   button,input[type=text],code,.panel,.devices,header,.drop,.chip,.msg,.file-item,.msg-form,.disk-space, select {
@@ -591,8 +597,8 @@
     .bg-glow{animation:none;filter:blur(62px);opacity:.11}
   }
   @media (hover:none),(pointer:coarse){
-    .glow-target::before{background:radial-gradient(125px circle at var(--mouse-x,50%) var(--mouse-y,50%),rgba(var(--accent-rgb),.72) 0%,rgba(var(--accent-rgb),.22) 38%,transparent 72%);}
-    .glow-target.is-lit{border-color:rgba(var(--accent-rgb),.58);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.14),0 0 14px rgba(var(--accent-rgb),.10);}
+    .glow-target::before{background:radial-gradient(155px circle at var(--mouse-x,50%) var(--mouse-y,50%),rgba(var(--accent-rgb),.72) 0%,rgba(var(--accent-rgb),.22) 38%,transparent 72%);}
+    .glow-target.is-lit{border-color:rgba(var(--accent-rgb),.58);box-shadow:0 0 14px rgba(var(--accent-rgb),.12);}
   }
   #fileList>.file-item,.file-list-inner>.file-item{content-visibility:auto;contain-intrinsic-size:110px}
   @media (prefers-reduced-motion:reduce){
